@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Ranking</title>
+<style>
+  :root {
+    --bg: #1a1a1a;
+    --panel: #232323;
+    --panel-2: #2c2c2c;
+    --border: #3a3a3a;
+    --text: #e8e8e8;
+    --muted: #9a9a9a;
+    --accent: #4a9eff;
+    --danger: #e05a5a;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  body { min-height: 100vh; display: flex; flex-direction: column; }
+
+  header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    background: var(--panel); flex-wrap: wrap;
+  }
+  header h1 { font-size: 16px; margin: 0 12px 0 0; font-weight: 600; }
+  button {
+    background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px;
+  }
+  button:hover { background: #353535; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary:hover { background: #3a8eef; }
+  button.danger { color: var(--danger); }
+
+  main { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+  .rank-area {
+    border: 1px solid var(--border); background: var(--panel); padding: 8px;
+  }
+  .rank-area h2 { font-size: 13px; margin: 0 0 8px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .rank-images {
+    display: flex; flex-wrap: wrap; align-content: flex-start;
+    gap: 4px; min-height: 160px; padding: 4px; background: var(--panel-2);
+  }
+  .rank-images.drag-over { background: #3a3a3a; }
+  .rank-empty { color: var(--muted); font-size: 13px; padding: 48px; text-align: center; width: 100%; }
+
+  .img-card {
+    cursor: grab; position: relative; border: 1px solid transparent;
+    line-height: 0;
+  }
+  .img-card img { display: block; height: 150px; width: auto; }
+  .img-card:hover { border-color: var(--accent); }
+  .img-card:active { cursor: grabbing; }
+  .img-card.dragging { opacity: 0.3; }
+
+  .rank-num {
+    position: absolute; top: 0; left: 0;
+    min-width: 20px; height: 20px; padding: 0 5px;
+    background: var(--accent); color: #fff;
+    font-size: 12px; font-weight: 700; line-height: 20px;
+    text-align: center; pointer-events: none;
+    border-bottom-right-radius: 5px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+
+  .drop-placeholder {
+    background: rgba(74, 158, 255, 0.2);
+    border: 2px dashed var(--accent);
+    border-radius: 2px;
+    flex-shrink: 0;
+    box-sizing: border-box;
+  }
+  .img-card .remove, .img-card .text-btn {
+    position: absolute;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(0,0,0,0.7); color: #fff; border: none;
+    font-size: 11px; line-height: 18px; padding: 0;
+    cursor: pointer; display: none; font-weight: bold;
+  }
+  .img-card .remove { top: 2px; right: 2px; }
+  .img-card .text-btn { bottom: 2px; left: 2px; top: auto; }
+  .img-card:hover .remove, .img-card:hover .text-btn { display: block; }
+
+  .img-bubble {
+    position: absolute;
+    background: rgba(0, 0, 0, 0.55);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: move;
+    user-select: none;
+    white-space: nowrap;
+    transform: translate(-50%, -50%);
+    max-width: calc(100% - 8px);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+
+  .file-drop-overlay {
+    position: fixed; inset: 0; background: rgba(74,158,255,0.15);
+    border: 4px dashed var(--accent); pointer-events: none;
+    display: none; align-items: center; justify-content: center;
+    font-size: 24px; color: var(--accent); z-index: 1000;
+  }
+  .file-drop-overlay.active { display: flex; }
+
+  .toast {
+    position: fixed; bottom: 20px; right: 20px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    padding: 10px 16px; border-radius: 4px; font-size: 13px;
+    opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ranking</h1>
+  <button id="addImagesBtn">+ Add Images</button>
+  <button id="captionsBtn" title="Populate captions on uncaptioned images using their filenames">Captions from filenames</button>
+  <span style="flex:1"></span>
+  <span id="imageCount" style="color: var(--muted); font-size: 12px; margin-right: 12px;"></span>
+  <span id="saveStatus" style="color: var(--muted); font-size: 12px; margin-right: 8px;"></span>
+  <button id="backupBtn" title="Download the ranking + images as a single .json file">Backup</button>
+  <button id="restoreBtn" title="Replace current state with a .json backup">Restore</button>
+  <button id="exportBtn" class="primary">Export JPG</button>
+  <button id="resetBtn" class="danger">Reset</button>
+  <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
+  <input type="file" id="restoreInput" accept="application/json,.json" style="display:none" />
+</header>
+
+<main>
+  <div class="rank-area">
+    <h2>Ranking (best &rarr; worst, left to right)</h2>
+    <div class="rank-images" id="ranked" data-tier="ranked"></div>
+  </div>
+  <div class="rank-area">
+    <h2>Unranked</h2>
+    <div class="rank-images" id="pool" data-tier="pool"></div>
+  </div>
+</main>
+
+<div class="file-drop-overlay" id="dropOverlay">Drop images to add</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== IndexedDB helpers =====
+const DB_NAME = 'ranking';
+const DB_VERSION = 1;
+const STORE = 'state';
+const STATE_KEY = 'current';
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function dbGet() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).get(STATE_KEY);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+async function dbSet(value) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).put(value, STATE_KEY);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+// ===== State =====
+let state = {
+  ranked: [], // [imageId] in rank order, left to right
+  pool: [],   // [imageId]
+  images: {}, // {id: {blob, name, url, annotation}}
+};
+let nextId = 1;
+const newId = () => 'id_' + (nextId++);
+
+function freshState() {
+  state = { ranked: [], pool: [], images: {} };
+}
+
+// Blob URLs: regenerated on load (not persisted)
+function refreshImageUrls() {
+  for (const id in state.images) {
+    const img = state.images[id];
+    if (img.url) URL.revokeObjectURL(img.url);
+    img.url = URL.createObjectURL(img.blob);
+  }
+}
+
+async function loadState() {
+  const saved = await dbGet();
+  if (saved) {
+    state = saved;
+    if (!Array.isArray(state.ranked)) state.ranked = [];
+    if (!Array.isArray(state.pool)) state.pool = [];
+    // Compute nextId from existing ids
+    let maxId = 0;
+    const scan = (s) => { const m = /^id_(\d+)$/.exec(s); if (m) maxId = Math.max(maxId, +m[1]); };
+    Object.keys(state.images).forEach(scan);
+    nextId = maxId + 1;
+    refreshImageUrls();
+  } else {
+    freshState();
+  }
+}
+
+let saveTimer = null;
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  setSaveStatus('Saving...');
+  saveTimer = setTimeout(async () => {
+    const toSave = {
+      ranked: state.ranked,
+      pool: state.pool,
+      images: {},
+    };
+    for (const id in state.images) {
+      const im = state.images[id];
+      toSave.images[id] = { blob: im.blob, name: im.name, annotation: im.annotation || null };
+    }
+    try {
+      await dbSet(toSave);
+      setSaveStatus('Saved');
+      setTimeout(() => setSaveStatus(''), 1200);
+    } catch (e) {
+      setSaveStatus('Save failed: ' + e.message);
+    }
+  }, 300);
+}
+
+function setSaveStatus(s) {
+  document.getElementById('saveStatus').textContent = s;
+}
+
+// ===== Rendering =====
+// Cards are cached by image id so images are decoded once and reused across
+// renders. Rebuilding them every move was slow and caused blank flashes while
+// the browser re-decoded full-resolution images.
+const cardCache = new Map(); // imgId -> card element
+
+function getCard(imgId) {
+  let card = cardCache.get(imgId);
+  if (!card) {
+    card = makeImageCard(imgId);
+    if (card) cardCache.set(imgId, card);
+  }
+  return card;
+}
+
+function emptyMsg(text) {
+  const empty = document.createElement('div');
+  empty.className = 'rank-empty';
+  empty.textContent = text;
+  return empty;
+}
+
+function render() {
+  renderRanked();
+  renderPool();
+  updateImageCount();
+}
+
+function updateImageCount() {
+  const total = Object.keys(state.images).length;
+  const ranked = state.ranked.length;
+  const unranked = state.pool.length;
+  const el = document.getElementById('imageCount');
+  el.textContent = total === 0
+    ? 'No images'
+    : `${total} image${total === 1 ? '' : 's'} (${ranked} ranked, ${unranked} unranked)`;
+}
+
+function renderRanked() {
+  const el = document.getElementById('ranked');
+  el.replaceChildren();  // detaches cached cards without destroying them
+  if (state.ranked.length === 0) {
+    el.appendChild(emptyMsg('Drag images here to rank them. The number in each corner is its rank.'));
+    return;
+  }
+  state.ranked.forEach((imgId, i) => {
+    const card = getCard(imgId);
+    if (!card) return;
+    card._rankNum.textContent = i + 1;
+    card._rankNum.style.display = '';
+    el.appendChild(card);
+  });
+}
+
+function renderPool() {
+  const poolEl = document.getElementById('pool');
+  poolEl.replaceChildren();
+  if (state.pool.length === 0) {
+    poolEl.appendChild(emptyMsg('Drag images here, or click "+ Add Images" / drop image files anywhere on this page.'));
+    return;
+  }
+  state.pool.forEach(imgId => {
+    const card = getCard(imgId);
+    if (!card) return;
+    card._rankNum.style.display = 'none';
+    poolEl.appendChild(card);
+  });
+}
+
+function makeImageCard(imgId) {
+  const img = state.images[imgId];
+  if (!img) return null;
+  const card = document.createElement('div');
+  card.className = 'img-card';
+  card.draggable = true;
+  card.dataset.imageId = imgId;
+  card.title = img.name || '';
+  const imgEl = document.createElement('img');
+  imgEl.src = img.url;
+  imgEl.draggable = false;
+  imgEl.decoding = 'async';
+  card.appendChild(imgEl);
+
+  // Rank badge: always present, shown/hidden + numbered by the render pass.
+  const num = document.createElement('div');
+  num.className = 'rank-num';
+  num.style.display = 'none';
+  card.appendChild(num);
+  card._rankNum = num;
+
+  card.addEventListener('dragstart', (e) => {
+    e.dataTransfer.setData('text/plain', imgId);
+    e.dataTransfer.effectAllowed = 'move';
+    card.classList.add('dragging');
+    const r = card.getBoundingClientRect();
+    dragState = { imgId, w: r.width, h: r.height, sourceCard: card };
+    // Hide the source card from layout (after the browser captures the drag image)
+    setTimeout(() => { if (dragState && dragState.sourceCard === card) card.style.display = 'none'; }, 0);
+  });
+  card.addEventListener('dragend', () => {
+    card.style.display = '';
+    card.classList.remove('dragging');
+    removePlaceholder();
+    dragState = null;
+  });
+
+  const rm = document.createElement('button');
+  rm.className = 'remove';
+  rm.textContent = '×';
+  rm.title = 'Remove image';
+  rm.addEventListener('click', (e) => {
+    e.stopPropagation();
+    removeImage(imgId);
+  });
+  card.appendChild(rm);
+
+  const textBtn = document.createElement('button');
+  textBtn.className = 'text-btn';
+  textBtn.textContent = 'T';
+  textBtn.title = img.annotation ? 'Edit text (clear to remove)' : 'Add text';
+  textBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const fallback = stripExt(img.name || '');
+    const current = img.annotation ? img.annotation.text : fallback;
+    const next = prompt('Caption text (leave empty to remove):', current);
+    if (next === null) return;  // cancelled
+    if (next.trim() === '') {
+      img.annotation = null;
+    } else {
+      img.annotation = img.annotation
+        ? { ...img.annotation, text: next }
+        : { text: next, x: 0.5, y: 0.85 };
+    }
+    cardCache.delete(imgId);  // rebuild so the caption bubble reflects the change
+    render();
+    scheduleSave();
+  });
+  card.appendChild(textBtn);
+
+  if (img.annotation) {
+    const bubble = document.createElement('div');
+    bubble.className = 'img-bubble';
+    bubble.textContent = img.annotation.text;
+    bubble.style.left = (img.annotation.x * 100) + '%';
+    bubble.style.top = (img.annotation.y * 100) + '%';
+    // Drag to reposition the bubble without triggering card drag
+    bubble.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      card.draggable = false;
+      const rect = card.getBoundingClientRect();
+      const startX = e.clientX, startY = e.clientY;
+      const initX = img.annotation.x, initY = img.annotation.y;
+      const onMove = (ev) => {
+        const nx = Math.max(0, Math.min(1, initX + (ev.clientX - startX) / rect.width));
+        const ny = Math.max(0, Math.min(1, initY + (ev.clientY - startY) / rect.height));
+        img.annotation.x = nx;
+        img.annotation.y = ny;
+        bubble.style.left = (nx * 100) + '%';
+        bubble.style.top = (ny * 100) + '%';
+      };
+      const onUp = () => {
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+        card.draggable = true;
+        scheduleSave();
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    });
+    card.appendChild(bubble);
+  }
+
+  return card;
+}
+
+let dragState = null;       // { imgId, w, h, sourceCard }
+let placeholderEl = null;
+
+function ensurePlaceholder() {
+  if (!placeholderEl) {
+    placeholderEl = document.createElement('div');
+    placeholderEl.className = 'drop-placeholder';
+  }
+  if (dragState) {
+    placeholderEl.style.width = dragState.w + 'px';
+    placeholderEl.style.height = dragState.h + 'px';
+  }
+  return placeholderEl;
+}
+
+function removePlaceholder() {
+  if (placeholderEl && placeholderEl.parentNode) {
+    placeholderEl.parentNode.removeChild(placeholderEl);
+  }
+}
+
+// Find where the dragged item should land, based on the cursor position.
+// Returns an index among the *visible* cards (the dragged card is hidden, so
+// it's excluded) — which, after removing the dragged id from its list, is the
+// correct splice index. Robust for a wrapping row of varying-width images:
+// pick the card whose center is nearest the cursor, then go before/after it.
+function computeInsertIndex(el, x, y) {
+  const cards = [...el.children].filter(c =>
+    c.classList && c.classList.contains('img-card') && c.style.display !== 'none');
+  let index = cards.length;   // default: append at the end
+  let bestDist = Infinity;
+  for (let i = 0; i < cards.length; i++) {
+    const r = cards[i].getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    const d = Math.hypot(x - cx, y - cy);
+    if (d < bestDist) {
+      bestDist = d;
+      index = (x < cx) ? i : i + 1;
+    }
+  }
+  return { index, cards };
+}
+
+function setupDropZone(el, target) {
+  el.addEventListener('dragover', (e) => {
+    if (!e.dataTransfer.types.includes('text/plain')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (!dragState) return;
+
+    const ph = ensurePlaceholder();
+    const { index, cards } = computeInsertIndex(el, e.clientX, e.clientY);
+    const before = cards[index] || null;  // null = append
+    if (before) {
+      if (ph.nextSibling !== before) el.insertBefore(ph, before);
+    } else {
+      if (ph.parentNode !== el || ph.nextSibling !== null) el.appendChild(ph);
+    }
+  });
+
+  el.addEventListener('dragleave', (e) => {
+    // Remove the placeholder only when the cursor truly leaves this zone's
+    // bounds. Geometry-based so it doesn't depend on relatedTarget (which is
+    // often null mid-drag and caused the placeholder to vanish prematurely).
+    const r = el.getBoundingClientRect();
+    if (e.clientX < r.left || e.clientX >= r.right ||
+        e.clientY < r.top || e.clientY >= r.bottom) {
+      removePlaceholder();
+    }
+  });
+
+  el.addEventListener('drop', (e) => {
+    const imgId = e.dataTransfer.getData('text/plain');
+    if (!imgId || !state.images[imgId]) return;
+    e.preventDefault();
+    // Compute the index straight from the cursor position so it never depends
+    // on the placeholder still being present in the DOM.
+    const { index } = computeInsertIndex(el, e.clientX, e.clientY);
+    removePlaceholder();
+    moveImage(imgId, target, index);
+  });
+}
+
+// ===== Operations =====
+function listFor(target) {
+  return target === 'ranked' ? state.ranked : state.pool;
+}
+
+function removeFromAny(imgId) {
+  for (const list of [state.ranked, state.pool]) {
+    const i = list.indexOf(imgId);
+    if (i !== -1) { list.splice(i, 1); return; }
+  }
+}
+
+function moveImage(imgId, target, insertIndex) {
+  removeFromAny(imgId);
+  const list = listFor(target);
+  const idx = Math.min(Math.max(insertIndex, 0), list.length);
+  list.splice(idx, 0, imgId);
+  render();
+  scheduleSave();
+}
+
+function removeImage(imgId) {
+  removeFromAny(imgId);
+  const img = state.images[imgId];
+  if (img && img.url) URL.revokeObjectURL(img.url);
+  delete state.images[imgId];
+  cardCache.delete(imgId);
+  render();
+  scheduleSave();
+}
+
+async function addFiles(files) {
+  const imgs = [...files].filter(f => f.type.startsWith('image/'));
+  if (imgs.length === 0) return;
+  for (const file of imgs) {
+    const id = newId();
+    const blob = file;
+    state.images[id] = { blob, name: file.name, url: URL.createObjectURL(blob) };
+    state.pool.push(id);
+  }
+  render();
+  scheduleSave();
+  showToast(`Added ${imgs.length} image${imgs.length === 1 ? '' : 's'}`);
+}
+
+// ===== Export to JPG =====
+async function loadImageFromUrl(url) {
+  const im = new Image();
+  im.src = url;
+  // decode() resolves only once the bitmap is ready to paint. Relying on
+  // onload alone let drawImage run before some images finished decoding, so
+  // their pixels came out blank on the canvas (the later images in a big batch).
+  try {
+    await im.decode();
+  } catch (e) {
+    // Some browsers can reject decode() spuriously; fall back to onload.
+    await new Promise((resolve, reject) => {
+      if (im.complete && im.naturalWidth) return resolve();
+      im.onload = () => resolve();
+      im.onerror = reject;
+    });
+  }
+  return im;
+}
+
+function stripExt(name) {
+  const i = name.lastIndexOf('.');
+  return i > 0 ? name.slice(0, i) : name;
+}
+
+function drawBubble(ctx, ann, ix, iy, iw, ih) {
+  const fontPx = Math.max(14, Math.round(ih * 0.08));
+  const padX = Math.round(fontPx * 0.7);
+  const padY = Math.round(fontPx * 0.35);
+  const radius = Math.round(fontPx * 0.7);
+  ctx.save();
+  ctx.font = `600 ${fontPx}px -apple-system, BlinkMacSystemFont, Arial, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  const maxTextW = iw - padX * 2 - 8;
+  const lines = wrapText(ctx, ann.text, maxTextW);
+  const lineH = fontPx * 1.2;
+  const textW = Math.max(...lines.map(l => ctx.measureText(l).width));
+  const boxW = textW + padX * 2;
+  const boxH = lines.length * lineH + padY * 2;
+  let cx = ix + ann.x * iw;
+  let cy = iy + ann.y * ih;
+  // Keep bubble within image bounds
+  cx = Math.max(ix + boxW / 2, Math.min(ix + iw - boxW / 2, cx));
+  cy = Math.max(iy + boxH / 2, Math.min(iy + ih - boxH / 2, cy));
+  const bx = cx - boxW / 2, by = cy - boxH / 2;
+  // Bubble background
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+  roundRect(ctx, bx, by, boxW, boxH, radius);
+  ctx.fill();
+  // Text
+  ctx.fillStyle = '#fff';
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 2;
+  ctx.shadowOffsetY = 1;
+  const textStartY = cy - (lines.length - 1) * lineH / 2;
+  lines.forEach((line, li) => {
+    ctx.fillText(line, cx, textStartY + li * lineH);
+  });
+  ctx.restore();
+}
+
+function drawRankNum(ctx, n, ix, iy, ih) {
+  const fontPx = Math.max(12, Math.round(ih * 0.09));
+  const padX = Math.round(fontPx * 0.45);
+  const boxH = Math.round(fontPx * 1.5);
+  ctx.save();
+  ctx.font = `700 ${fontPx}px -apple-system, BlinkMacSystemFont, Arial, sans-serif`;
+  const textW = ctx.measureText(String(n)).width;
+  const boxW = Math.max(boxH, textW + padX * 2);
+  // Badge background, anchored top-left, with rounded bottom-right corner
+  ctx.fillStyle = '#4a9eff';
+  ctx.beginPath();
+  const r = Math.round(fontPx * 0.4);
+  ctx.moveTo(ix, iy);
+  ctx.lineTo(ix + boxW, iy);
+  ctx.lineTo(ix + boxW, iy + boxH - r);
+  ctx.arcTo(ix + boxW, iy + boxH, ix + boxW - r, iy + boxH, r);
+  ctx.lineTo(ix, iy + boxH);
+  ctx.closePath();
+  ctx.fill();
+  // Number
+  ctx.fillStyle = '#fff';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.shadowColor = 'rgba(0,0,0,0.4)';
+  ctx.shadowBlur = 2;
+  ctx.shadowOffsetY = 1;
+  ctx.fillText(String(n), ix + boxW / 2, iy + boxH / 2 + 1);
+  ctx.restore();
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function wrapText(ctx, text, maxW) {
+  const words = text.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return [''];
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const test = cur ? cur + ' ' + w : w;
+    if (ctx.measureText(test).width <= maxW) {
+      cur = test;
+    } else {
+      if (cur) lines.push(cur);
+      cur = w;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines;
+}
+
+async function exportJPG() {
+  if (state.ranked.length === 0) {
+    showToast('Nothing ranked to export');
+    return;
+  }
+  const PAD = 8;
+  const BG = '#1a1a1a';
+
+  // Measure each image one at a time (decode then immediately release) so we
+  // never hold 80 full-resolution bitmaps in memory at once. The actual pixels
+  // are decoded again, streamed, during the draw pass below.
+  const dims = {};
+  for (const id of state.ranked) {
+    const bmp = await createImageBitmap(state.images[id].blob);
+    dims[id] = { w: bmp.width, h: bmp.height };
+    bmp.close();
+  }
+
+  // Uniform height = tallest source image (preserves highest quality);
+  // each image scaled proportionally to that height.
+  let TARGET_H = 500;
+  for (const id of state.ranked) {
+    if (dims[id].h > TARGET_H) TARGET_H = dims[id].h;
+  }
+
+  // Safari caps canvas at ~16384px per side and ~16384² area; stay well under.
+  const MAX_SIDE = 14000;
+  const MAX_AREA = 200_000_000;
+
+  // Wrap ranked images onto multiple lines when they exceed maxLineW.
+  function layoutFor(targetH) {
+    const maxLineW = Math.max(1800, targetH * 6);
+    const sW = {};
+    for (const id of state.ranked) {
+      const im = dims[id];
+      sW[id] = Math.round(im.w * (targetH / im.h));
+    }
+    const lines = [];
+    let cur = [];
+    let curW = PAD;
+    for (const id of state.ranked) {
+      const iw = sW[id];
+      if (cur.length > 0 && curW + iw + PAD > maxLineW) {
+        lines.push({ images: cur, width: curW });
+        cur = []; curW = PAD;
+      }
+      cur.push(id);
+      curW += iw + PAD;
+    }
+    if (cur.length > 0) lines.push({ images: cur, width: curW });
+    const totalHv = lines.length * targetH + (lines.length + 1) * PAD;
+    const totalWv = Math.max(...lines.map(l => l.width));
+    return { targetH, sW, lines, totalW: totalWv, totalH: totalHv };
+  }
+
+  let L = layoutFor(TARGET_H);
+  const sideScale = Math.min(MAX_SIDE / L.totalW, MAX_SIDE / L.totalH, 1);
+  const areaScale = Math.sqrt(MAX_AREA / (L.totalW * L.totalH));
+  const scale = Math.min(sideScale, areaScale, 1);
+  if (scale < 1) {
+    TARGET_H = Math.max(40, Math.floor(TARGET_H * scale));
+    L = layoutFor(TARGET_H);
+  }
+  const { sW: scaledW, lines, totalW, totalH } = L;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = totalW;
+  canvas.height = totalH;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, totalW, totalH);
+
+  let rank = 1;
+  let ly = PAD;
+  for (const line of lines) {
+    let x = PAD;
+    for (const id of line.images) {
+      const w = scaledW[id];
+      // Decode this image, draw it, then free it immediately — peak memory is
+      // one source bitmap plus the canvas, instead of all 80 at once (which
+      // caused later drawImage calls to silently fail / render blank).
+      const bmp = await createImageBitmap(state.images[id].blob);
+      ctx.drawImage(bmp, x, ly, w, TARGET_H);
+      bmp.close();
+      const ann = state.images[id].annotation;
+      if (ann && ann.text) drawBubble(ctx, ann, x, ly, w, TARGET_H);
+      drawRankNum(ctx, rank, x, ly, TARGET_H);
+      x += w + PAD;
+      rank++;
+    }
+    ly += TARGET_H + PAD;
+  }
+
+  // Highest quality JPEG
+  canvas.toBlob((blob) => {
+    if (!blob) {
+      console.error('toBlob returned null. Canvas size:', totalW, 'x', totalH);
+      showToast(`Export failed (canvas ${totalW}×${totalH} too large for browser)`);
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    a.href = url;
+    a.download = `ranking-${ts}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast(`Exported (${totalW}×${totalH})`);
+  }, 'image/jpeg', 1.0);
+}
+
+// ===== Backup / restore =====
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = () => reject(r.error);
+    r.readAsDataURL(blob);
+  });
+}
+
+async function dataUrlToBlob(dataUrl) {
+  const res = await fetch(dataUrl);
+  return res.blob();
+}
+
+async function downloadBackup() {
+  showToast('Building backup...');
+  const out = {
+    version: 1,
+    ranked: state.ranked,
+    pool: state.pool,
+    images: {},
+  };
+  for (const id in state.images) {
+    const img = state.images[id];
+    out.images[id] = {
+      name: img.name,
+      type: img.blob.type,
+      dataUrl: await blobToDataUrl(img.blob),
+      annotation: img.annotation || null,
+    };
+  }
+  const blob = new Blob([JSON.stringify(out)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  a.href = url;
+  a.download = `ranking-backup-${ts}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('Backup saved');
+}
+
+async function restoreBackup(file) {
+  let parsed;
+  try {
+    parsed = JSON.parse(await file.text());
+  } catch (e) {
+    alert('Not a valid backup file: ' + e.message);
+    return;
+  }
+  if (!parsed || !Array.isArray(parsed.ranked) || !Array.isArray(parsed.pool) || typeof parsed.images !== 'object') {
+    alert('Backup file is missing expected fields.');
+    return;
+  }
+  if (!confirm('Replace your current ranking with this backup? Current state will be lost.')) return;
+
+  // Release current blob URLs
+  for (const id in state.images) {
+    if (state.images[id].url) URL.revokeObjectURL(state.images[id].url);
+  }
+  // Rebuild state with blobs from data URLs
+  const newImages = {};
+  for (const id in parsed.images) {
+    const rec = parsed.images[id];
+    const blob = await dataUrlToBlob(rec.dataUrl);
+    newImages[id] = { blob, name: rec.name, url: URL.createObjectURL(blob), annotation: rec.annotation || null };
+  }
+  cardCache.clear();
+  state = { ranked: parsed.ranked, pool: parsed.pool, images: newImages };
+  // Recompute nextId
+  let maxId = 0;
+  const scan = (s) => { const m = /^id_(\d+)$/.exec(s); if (m) maxId = Math.max(maxId, +m[1]); };
+  Object.keys(state.images).forEach(scan);
+  nextId = maxId + 1;
+
+  render();
+  scheduleSave();
+  showToast('Restored');
+}
+
+// ===== UI wiring =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove('show'), 1500);
+}
+
+document.getElementById('addImagesBtn').addEventListener('click', () => {
+  document.getElementById('fileInput').click();
+});
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  addFiles(e.target.files);
+  e.target.value = '';
+});
+document.getElementById('captionsBtn').addEventListener('click', () => {
+  let added = 0;
+  for (const id in state.images) {
+    const im = state.images[id];
+    if (im.annotation) continue;
+    const text = stripExt(im.name || '').trim();
+    if (!text) continue;
+    im.annotation = { text, x: 0.5, y: 0.85 };
+    cardCache.delete(id);  // rebuild so the new caption bubble appears
+    added++;
+  }
+  if (added === 0) {
+    showToast('No uncaptioned images to populate');
+    return;
+  }
+  render();
+  scheduleSave();
+  showToast(`Captioned ${added} image${added === 1 ? '' : 's'}`);
+});
+document.getElementById('backupBtn').addEventListener('click', downloadBackup);
+document.getElementById('restoreBtn').addEventListener('click', () => {
+  document.getElementById('restoreInput').click();
+});
+document.getElementById('restoreInput').addEventListener('change', (e) => {
+  const f = e.target.files[0];
+  if (f) restoreBackup(f);
+  e.target.value = '';
+});
+document.getElementById('exportBtn').addEventListener('click', exportJPG);
+document.getElementById('resetBtn').addEventListener('click', async () => {
+  if (!confirm('Delete all images and the ranking? This cannot be undone.')) return;
+  for (const id in state.images) {
+    if (state.images[id].url) URL.revokeObjectURL(state.images[id].url);
+  }
+  cardCache.clear();
+  freshState();
+  render();
+  scheduleSave();
+});
+
+// Global drag-drop of files onto the page
+let dragDepth = 0;
+const overlay = document.getElementById('dropOverlay');
+window.addEventListener('dragenter', (e) => {
+  if (!e.dataTransfer.types.includes('Files')) return;
+  dragDepth++;
+  overlay.classList.add('active');
+});
+window.addEventListener('dragleave', () => {
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (dragDepth === 0) overlay.classList.remove('active');
+});
+window.addEventListener('dragover', (e) => {
+  if (e.dataTransfer.types.includes('Files')) e.preventDefault();
+});
+window.addEventListener('drop', (e) => {
+  dragDepth = 0;
+  overlay.classList.remove('active');
+  if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
+  e.preventDefault();
+  addFiles(e.dataTransfer.files);
+});
+
+// ===== Boot =====
+// Drop zones are wired up exactly once (not per render) so listeners don't
+// accumulate and slow everything down over time.
+setupDropZone(document.getElementById('ranked'), 'ranked');
+setupDropZone(document.getElementById('pool'), 'pool');
+
+(async () => {
+  try {
+    await loadState();
+  } catch (e) {
+    console.error('Load failed:', e);
+    freshState();
+  }
+  render();
+})();
+</script>
+</body>
+</html>
