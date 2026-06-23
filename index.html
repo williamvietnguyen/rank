@@ -154,7 +154,6 @@
 const DB_NAME = 'ranking';
 const DB_VERSION = 1;
 const STORE = 'state';
-const STATE_KEY = 'current';
 
 function openDB() {
   return new Promise((resolve, reject) => {
@@ -164,22 +163,59 @@ function openDB() {
     req.onerror = () => reject(req.error);
   });
 }
-async function dbGet() {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readonly');
-    const req = tx.objectStore(STORE).get(STATE_KEY);
-    req.onsuccess = () => resolve(req.result);
-    req.onerror = () => reject(req.error);
-  });
-}
-async function dbSet(value) {
+// Each record lives under its own key: 'layout' holds the (tiny) ordering, and
+// 'img:<id>' holds one image's blob. This means a reorder writes only the small
+// layout record instead of rewriting every image blob — the old behaviour that
+// saturated IndexedDB and left saves stuck on "Saving...". onabort is handled
+// so a failed/aborted transaction rejects instead of hanging forever.
+const LAYOUT_KEY = 'layout';
+const IMG_PREFIX = 'img:';
+const LEGACY_KEY = 'current';
+
+async function dbPut(key, value) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite');
-    tx.objectStore(STORE).put(value, STATE_KEY);
+    tx.objectStore(STORE).put(value, key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error || new Error('save error'));
+    tx.onabort = () => reject(tx.error || new Error('save aborted (storage quota?)'));
+  });
+}
+async function dbDelete(key) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).delete(key);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error || new Error('delete error'));
+    tx.onabort = () => reject(tx.error || new Error('delete aborted'));
+  });
+}
+async function dbGetAll() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const store = tx.objectStore(STORE);
+    const keysReq = store.getAllKeys();
+    const valsReq = store.getAll();
+    tx.oncomplete = () => {
+      const out = {};
+      keysReq.result.forEach((k, i) => { out[k] = valsReq.result[i]; });
+      resolve(out);
+    };
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+async function dbClear() {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readwrite');
+    tx.objectStore(STORE).clear();
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
   });
 }
 
@@ -196,54 +232,96 @@ function freshState() {
   state = { ranked: [], pool: [], images: {} };
 }
 
-// Blob URLs: regenerated on load (not persisted)
-function refreshImageUrls() {
-  for (const id in state.images) {
-    const img = state.images[id];
-    if (img.url) URL.revokeObjectURL(img.url);
-    img.url = URL.createObjectURL(img.blob);
-  }
+function computeNextId() {
+  let maxId = 0;
+  const scan = (s) => { const m = /^id_(\d+)$/.exec(s); if (m) maxId = Math.max(maxId, +m[1]); };
+  Object.keys(state.images).forEach(scan);
+  nextId = maxId + 1;
+}
+
+function adoptImageRecord(id, rec) {
+  state.images[id] = {
+    blob: rec.blob,
+    name: rec.name,
+    annotation: rec.annotation || null,
+    url: URL.createObjectURL(rec.blob),
+  };
 }
 
 async function loadState() {
-  const saved = await dbGet();
-  if (saved) {
-    state = saved;
-    if (!Array.isArray(state.ranked)) state.ranked = [];
-    if (!Array.isArray(state.pool)) state.pool = [];
-    // Compute nextId from existing ids
-    let maxId = 0;
-    const scan = (s) => { const m = /^id_(\d+)$/.exec(s); if (m) maxId = Math.max(maxId, +m[1]); };
-    Object.keys(state.images).forEach(scan);
-    nextId = maxId + 1;
-    refreshImageUrls();
+  const all = await dbGetAll();
+  const imgKeys = Object.keys(all).filter(k => k.startsWith(IMG_PREFIX));
+
+  if (all[LAYOUT_KEY] || imgKeys.length) {
+    // New per-key format.
+    const layout = all[LAYOUT_KEY] || { ranked: [], pool: [] };
+    state = { ranked: layout.ranked || [], pool: layout.pool || [], images: {} };
+    for (const k of imgKeys) adoptImageRecord(k.slice(IMG_PREFIX.length), all[k]);
+    computeNextId();
+  } else if (all[LEGACY_KEY]) {
+    // Migrate the old single-blob value into per-key records, then drop it.
+    const old = all[LEGACY_KEY];
+    state = { ranked: old.ranked || [], pool: old.pool || [], images: {} };
+    for (const id in old.images) adoptImageRecord(id, old.images[id]);
+    computeNextId();
+    try {
+      await persistAllImages();
+      await dbPut(LAYOUT_KEY, { ranked: state.ranked, pool: state.pool });
+      await dbDelete(LEGACY_KEY);
+    } catch (e) {
+      console.error('Migration save failed:', e);
+    }
   } else {
     freshState();
   }
 }
 
-let saveTimer = null;
-function scheduleSave() {
-  if (saveTimer) clearTimeout(saveTimer);
+function imageRecord(id) {
+  const im = state.images[id];
+  return { blob: im.blob, name: im.name, annotation: im.annotation || null };
+}
+
+async function persistAllImages() {
+  for (const id in state.images) {
+    await dbPut(IMG_PREFIX + id, imageRecord(id));
+  }
+}
+
+// Layout (ordering) save: debounced and tiny, so frequent reorders are cheap.
+let layoutSaveTimer = null;
+function saveLayout() {
+  if (layoutSaveTimer) clearTimeout(layoutSaveTimer);
   setSaveStatus('Saving...');
-  saveTimer = setTimeout(async () => {
-    const toSave = {
-      ranked: state.ranked,
-      pool: state.pool,
-      images: {},
-    };
-    for (const id in state.images) {
-      const im = state.images[id];
-      toSave.images[id] = { blob: im.blob, name: im.name, annotation: im.annotation || null };
-    }
+  layoutSaveTimer = setTimeout(async () => {
     try {
-      await dbSet(toSave);
+      await dbPut(LAYOUT_KEY, { ranked: state.ranked, pool: state.pool });
       setSaveStatus('Saved');
       setTimeout(() => setSaveStatus(''), 1200);
     } catch (e) {
       setSaveStatus('Save failed: ' + e.message);
     }
-  }, 300);
+  }, 250);
+}
+
+// Image saves are immediate but targeted — only the one changed image is written.
+async function saveImage(id) {
+  if (!state.images[id]) return;
+  setSaveStatus('Saving...');
+  try {
+    await dbPut(IMG_PREFIX + id, imageRecord(id));
+    setSaveStatus('Saved');
+    setTimeout(() => setSaveStatus(''), 1200);
+  } catch (e) {
+    setSaveStatus('Save failed: ' + e.message);
+  }
+}
+
+async function deleteImageRecord(id) {
+  try {
+    await dbDelete(IMG_PREFIX + id);
+  } catch (e) {
+    setSaveStatus('Save failed: ' + e.message);
+  }
 }
 
 function setSaveStatus(s) {
@@ -385,7 +463,7 @@ function makeImageCard(imgId) {
     }
     cardCache.delete(imgId);  // rebuild so the caption bubble reflects the change
     render();
-    scheduleSave();
+    saveImage(imgId);  // only this image's annotation changed
   });
   card.appendChild(textBtn);
 
@@ -415,7 +493,7 @@ function makeImageCard(imgId) {
         window.removeEventListener('pointermove', onMove);
         window.removeEventListener('pointerup', onUp);
         card.draggable = true;
-        scheduleSave();
+        saveImage(imgId);  // only this image's annotation position changed
       };
       window.addEventListener('pointermove', onMove);
       window.addEventListener('pointerup', onUp);
@@ -528,7 +606,7 @@ function moveImage(imgId, target, insertIndex) {
   const idx = Math.min(Math.max(insertIndex, 0), list.length);
   list.splice(idx, 0, imgId);
   render();
-  scheduleSave();
+  saveLayout();  // only the ordering changed
 }
 
 function removeImage(imgId) {
@@ -538,20 +616,24 @@ function removeImage(imgId) {
   delete state.images[imgId];
   cardCache.delete(imgId);
   render();
-  scheduleSave();
+  deleteImageRecord(imgId);
+  saveLayout();
 }
 
 async function addFiles(files) {
   const imgs = [...files].filter(f => f.type.startsWith('image/'));
   if (imgs.length === 0) return;
+  const newIds = [];
   for (const file of imgs) {
     const id = newId();
     const blob = file;
     state.images[id] = { blob, name: file.name, url: URL.createObjectURL(blob) };
     state.pool.push(id);
+    newIds.push(id);
   }
   render();
-  scheduleSave();
+  for (const id of newIds) await saveImage(id);
+  saveLayout();
   showToast(`Added ${imgs.length} image${imgs.length === 1 ? '' : 's'}`);
 }
 
@@ -864,14 +946,18 @@ async function restoreBackup(file) {
   }
   cardCache.clear();
   state = { ranked: parsed.ranked, pool: parsed.pool, images: newImages };
-  // Recompute nextId
-  let maxId = 0;
-  const scan = (s) => { const m = /^id_(\d+)$/.exec(s); if (m) maxId = Math.max(maxId, +m[1]); };
-  Object.keys(state.images).forEach(scan);
-  nextId = maxId + 1;
+  computeNextId();
 
   render();
-  scheduleSave();
+  try {
+    await dbClear();
+    await persistAllImages();
+    await dbPut(LAYOUT_KEY, { ranked: state.ranked, pool: state.pool });
+    setSaveStatus('Saved');
+    setTimeout(() => setSaveStatus(''), 1200);
+  } catch (e) {
+    setSaveStatus('Save failed: ' + e.message);
+  }
   showToast('Restored');
 }
 
@@ -891,8 +977,8 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
   addFiles(e.target.files);
   e.target.value = '';
 });
-document.getElementById('captionsBtn').addEventListener('click', () => {
-  let added = 0;
+document.getElementById('captionsBtn').addEventListener('click', async () => {
+  const changed = [];
   for (const id in state.images) {
     const im = state.images[id];
     if (im.annotation) continue;
@@ -900,15 +986,15 @@ document.getElementById('captionsBtn').addEventListener('click', () => {
     if (!text) continue;
     im.annotation = { text, x: 0.5, y: 0.85 };
     cardCache.delete(id);  // rebuild so the new caption bubble appears
-    added++;
+    changed.push(id);
   }
-  if (added === 0) {
+  if (changed.length === 0) {
     showToast('No uncaptioned images to populate');
     return;
   }
   render();
-  scheduleSave();
-  showToast(`Captioned ${added} image${added === 1 ? '' : 's'}`);
+  for (const id of changed) await saveImage(id);
+  showToast(`Captioned ${changed.length} image${changed.length === 1 ? '' : 's'}`);
 });
 document.getElementById('backupBtn').addEventListener('click', downloadBackup);
 document.getElementById('restoreBtn').addEventListener('click', () => {
@@ -928,7 +1014,11 @@ document.getElementById('resetBtn').addEventListener('click', async () => {
   cardCache.clear();
   freshState();
   render();
-  scheduleSave();
+  try {
+    await dbClear();
+  } catch (e) {
+    setSaveStatus('Save failed: ' + e.message);
+  }
 });
 
 // Global drag-drop of files onto the page
