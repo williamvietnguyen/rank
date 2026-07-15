@@ -122,6 +122,8 @@
 <body>
 <header>
   <h1>Ranking</h1>
+  <input id="listName" type="text" placeholder="Untitled list" title="Name this list (used in export & backup filenames)"
+         style="background: var(--panel-2); color: var(--text); border: 1px solid var(--border); padding: 6px 10px; border-radius: 4px; font-size: 13px; margin-right: 8px; min-width: 160px;" />
   <button id="addImagesBtn">+ Add Images</button>
   <button id="captionsBtn" title="Populate captions on uncaptioned images using their filenames">Captions from filenames</button>
   <span style="flex:1"></span>
@@ -221,6 +223,7 @@ async function dbClear() {
 
 // ===== State =====
 let state = {
+  name: '',   // user-given title for this list
   ranked: [], // [imageId] in rank order, left to right
   pool: [],   // [imageId]
   images: {}, // {id: {blob, name, url, annotation}}
@@ -229,7 +232,17 @@ let nextId = 1;
 const newId = () => 'id_' + (nextId++);
 
 function freshState() {
-  state = { ranked: [], pool: [], images: {} };
+  state = { name: '', ranked: [], pool: [], images: {} };
+}
+
+// Turn a list name into a filename-safe slug. Falls back to 'ranking' so the
+// download always has a sensible base even when no name was entered.
+function nameSlug(fallback) {
+  const slug = (state.name || '').trim().toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60);
+  return slug || fallback;
 }
 
 function computeNextId() {
@@ -255,18 +268,18 @@ async function loadState() {
   if (all[LAYOUT_KEY] || imgKeys.length) {
     // New per-key format.
     const layout = all[LAYOUT_KEY] || { ranked: [], pool: [] };
-    state = { ranked: layout.ranked || [], pool: layout.pool || [], images: {} };
+    state = { name: layout.name || '', ranked: layout.ranked || [], pool: layout.pool || [], images: {} };
     for (const k of imgKeys) adoptImageRecord(k.slice(IMG_PREFIX.length), all[k]);
     computeNextId();
   } else if (all[LEGACY_KEY]) {
     // Migrate the old single-blob value into per-key records, then drop it.
     const old = all[LEGACY_KEY];
-    state = { ranked: old.ranked || [], pool: old.pool || [], images: {} };
+    state = { name: old.name || '', ranked: old.ranked || [], pool: old.pool || [], images: {} };
     for (const id in old.images) adoptImageRecord(id, old.images[id]);
     computeNextId();
     try {
       await persistAllImages();
-      await dbPut(LAYOUT_KEY, { ranked: state.ranked, pool: state.pool });
+      await dbPut(LAYOUT_KEY, { name: state.name, ranked: state.ranked, pool: state.pool });
       await dbDelete(LEGACY_KEY);
     } catch (e) {
       console.error('Migration save failed:', e);
@@ -294,7 +307,7 @@ function saveLayout() {
   setSaveStatus('Saving...');
   layoutSaveTimer = setTimeout(async () => {
     try {
-      await dbPut(LAYOUT_KEY, { ranked: state.ranked, pool: state.pool });
+      await dbPut(LAYOUT_KEY, { name: state.name, ranked: state.ranked, pool: state.pool });
       setSaveStatus('Saved');
       setTimeout(() => setSaveStatus(''), 1200);
     } catch (e) {
@@ -865,7 +878,7 @@ async function exportJPG() {
     const a = document.createElement('a');
     const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
     a.href = url;
-    a.download = `ranking-${ts}.jpg`;
+    a.download = `${nameSlug('ranking')}-${ts}.jpg`;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -893,6 +906,7 @@ async function downloadBackup() {
   showToast('Building backup...');
   const out = {
     version: 1,
+    name: state.name || '',
     ranked: state.ranked,
     pool: state.pool,
     images: {},
@@ -911,7 +925,7 @@ async function downloadBackup() {
   const a = document.createElement('a');
   const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
   a.href = url;
-  a.download = `ranking-backup-${ts}.json`;
+  a.download = `${nameSlug('ranking')}-backup-${ts}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -945,14 +959,15 @@ async function restoreBackup(file) {
     newImages[id] = { blob, name: rec.name, url: URL.createObjectURL(blob), annotation: rec.annotation || null };
   }
   cardCache.clear();
-  state = { ranked: parsed.ranked, pool: parsed.pool, images: newImages };
+  state = { name: parsed.name || '', ranked: parsed.ranked, pool: parsed.pool, images: newImages };
   computeNextId();
 
+  syncNameInput();
   render();
   try {
     await dbClear();
     await persistAllImages();
-    await dbPut(LAYOUT_KEY, { ranked: state.ranked, pool: state.pool });
+    await dbPut(LAYOUT_KEY, { name: state.name, ranked: state.ranked, pool: state.pool });
     setSaveStatus('Saved');
     setTimeout(() => setSaveStatus(''), 1200);
   } catch (e) {
@@ -969,6 +984,15 @@ function showToast(msg) {
   clearTimeout(showToast._t);
   showToast._t = setTimeout(() => t.classList.remove('show'), 1500);
 }
+
+function syncNameInput() {
+  document.getElementById('listName').value = state.name || '';
+}
+
+document.getElementById('listName').addEventListener('input', (e) => {
+  state.name = e.target.value;
+  saveLayout();  // only the small layout record changes
+});
 
 document.getElementById('addImagesBtn').addEventListener('click', () => {
   document.getElementById('fileInput').click();
@@ -1013,6 +1037,7 @@ document.getElementById('resetBtn').addEventListener('click', async () => {
   }
   cardCache.clear();
   freshState();
+  syncNameInput();
   render();
   try {
     await dbClear();
@@ -1057,6 +1082,7 @@ setupDropZone(document.getElementById('pool'), 'pool');
     console.error('Load failed:', e);
     freshState();
   }
+  syncNameInput();
   render();
 })();
 </script>
