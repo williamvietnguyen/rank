@@ -35,6 +35,17 @@
 
   main { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
 
+  .list-title {
+    width: 100%; display: block;
+    background: transparent; color: var(--text);
+    border: none; border-bottom: 1px solid transparent;
+    padding: 2px 0 8px; margin: 0;
+    font-family: inherit; font-size: 30px; font-weight: 700; letter-spacing: -0.01em;
+  }
+  .list-title::placeholder { color: var(--muted); font-weight: 600; }
+  .list-title:hover { border-bottom-color: var(--border); }
+  .list-title:focus { outline: none; border-bottom-color: var(--accent); }
+
   .rank-area {
     border: 1px solid var(--border); background: var(--panel); padding: 8px;
   }
@@ -122,8 +133,6 @@
 <body>
 <header>
   <h1>Ranking</h1>
-  <input id="listName" type="text" placeholder="Untitled list" title="Name this list (used in export & backup filenames)"
-         style="background: var(--panel-2); color: var(--text); border: 1px solid var(--border); padding: 6px 10px; border-radius: 4px; font-size: 13px; margin-right: 8px; min-width: 160px;" />
   <button id="addImagesBtn">+ Add Images</button>
   <button id="captionsBtn" title="Populate captions on uncaptioned images using their filenames">Captions from filenames</button>
   <span style="flex:1"></span>
@@ -138,6 +147,8 @@
 </header>
 
 <main>
+  <input id="listName" class="list-title" type="text" placeholder="Untitled ranking"
+         title="Title for this ranking — shown at the top of the export and used in export & backup filenames" />
   <div class="rank-area">
     <h2>Ranking (best &rarr; worst, left to right)</h2>
     <div class="rank-images" id="ranked" data-tier="ranked"></div>
@@ -771,6 +782,24 @@ function wrapText(ctx, text, maxW) {
   return lines;
 }
 
+// Title band drawn across the top of the export, centered over the image rows.
+function titleFont(fontPx) {
+  return `700 ${fontPx}px -apple-system, BlinkMacSystemFont, Arial, sans-serif`;
+}
+
+function drawTitle(ctx, lines, totalW, top, fontPx) {
+  ctx.save();
+  ctx.font = titleFont(fontPx);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#e8e8e8';
+  const lineH = fontPx * 1.35;
+  lines.forEach((line, i) => {
+    ctx.fillText(line, totalW / 2, top + lineH * i + lineH / 2);
+  });
+  ctx.restore();
+}
+
 async function exportJPG() {
   if (state.ranked.length === 0) {
     showToast('Nothing ranked to export');
@@ -800,6 +829,10 @@ async function exportJPG() {
   const MAX_SIDE = 14000;
   const MAX_AREA = 200_000_000;
 
+  const title = (state.name || '').trim();
+  // Offscreen context used only to measure the title text while laying out.
+  const measureCtx = document.createElement('canvas').getContext('2d');
+
   // Wrap ranked images onto multiple lines when they exceed maxLineW.
   function layoutFor(targetH) {
     const maxLineW = Math.max(1800, targetH * 6);
@@ -821,9 +854,28 @@ async function exportJPG() {
       curW += iw + PAD;
     }
     if (cur.length > 0) lines.push({ images: cur, width: curW });
-    const totalHv = lines.length * targetH + (lines.length + 1) * PAD;
-    const totalWv = Math.max(...lines.map(l => l.width));
-    return { targetH, sW, lines, totalW: totalWv, totalH: totalHv };
+    let totalWv = Math.max(...lines.map(l => l.width));
+
+    // Title band: sized off the row height and wrapped to the image width, so
+    // a long title never widens the canvas past the images themselves.
+    let titleFontPx = 0, titleBandH = 0, titleLines = [];
+    if (title) {
+      titleFontPx = Math.max(20, Math.round(targetH * 0.16));
+      const maxTitleW = Math.max(200, totalWv - PAD * 4);
+      measureCtx.font = titleFont(titleFontPx);
+      // Only an unbreakable word forces a smaller font; the rest just wraps.
+      const longestWord = Math.max(...title.split(/\s+/).filter(Boolean)
+        .map(w => measureCtx.measureText(w).width));
+      if (longestWord > maxTitleW) {
+        titleFontPx = Math.max(12, Math.floor(titleFontPx * maxTitleW / longestWord));
+        measureCtx.font = titleFont(titleFontPx);
+      }
+      titleLines = wrapText(measureCtx, title, maxTitleW);
+      titleBandH = Math.round(titleLines.length * titleFontPx * 1.35) + PAD;
+    }
+
+    const totalHv = titleBandH + lines.length * targetH + (lines.length + 1) * PAD;
+    return { targetH, sW, lines, totalW: totalWv, totalH: totalHv, titleFontPx, titleBandH, titleLines };
   }
 
   let L = layoutFor(TARGET_H);
@@ -834,7 +886,7 @@ async function exportJPG() {
     TARGET_H = Math.max(40, Math.floor(TARGET_H * scale));
     L = layoutFor(TARGET_H);
   }
-  const { sW: scaledW, lines, totalW, totalH } = L;
+  const { sW: scaledW, lines, totalW, totalH, titleFontPx, titleBandH, titleLines } = L;
 
   const canvas = document.createElement('canvas');
   canvas.width = totalW;
@@ -846,8 +898,10 @@ async function exportJPG() {
   ctx.fillStyle = BG;
   ctx.fillRect(0, 0, totalW, totalH);
 
+  if (title) drawTitle(ctx, titleLines, totalW, PAD, titleFontPx);
+
   let rank = 1;
-  let ly = PAD;
+  let ly = titleBandH + PAD;
   for (const line of lines) {
     let x = PAD;
     for (const id of line.images) {
