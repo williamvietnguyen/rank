@@ -32,6 +32,64 @@
   button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   button.primary:hover { background: #3a8eef; }
   button.danger { color: var(--danger); }
+  /* Export button with an attached "top N" field, styled as one split control. */
+  .export-group { display: inline-flex; align-items: stretch; }
+  .export-group button { border-top-right-radius: 0; border-bottom-right-radius: 0; }
+  .export-limit {
+    display: inline-flex; align-items: center; gap: 2px;
+    padding: 0 6px 0 8px; cursor: text;
+    background: #3a8eef; border: 1px solid var(--accent); border-left: 1px solid rgba(255,255,255,0.25);
+    border-radius: 0;
+    color: rgba(255,255,255,0.7); font-size: 11px;
+  }
+  .export-limit:last-child { border-radius: 0 4px 4px 0; }
+  .export-limit input {
+    width: 34px; background: transparent; color: #fff;
+    border: none; padding: 0; font-size: 13px; font-family: inherit;
+    -moz-appearance: textfield;
+  }
+  .export-limit input::placeholder { color: rgba(255,255,255,0.6); }
+  .export-limit input::-webkit-outer-spin-button,
+  .export-limit input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .export-limit input:focus { outline: none; }
+  .export-limit:focus-within { background: #2f7fd9; }
+
+  .tabs {
+    display: flex; align-items: flex-end; gap: 2px;
+    padding: 6px 16px 0; background: var(--panel);
+    border-bottom: 1px solid var(--border); overflow-x: auto;
+  }
+  .tabs .tab {
+    display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
+    max-width: 220px; margin-bottom: -1px;
+    background: transparent; color: var(--muted);
+    border: 1px solid transparent; border-bottom: none;
+    border-radius: 4px 4px 0 0; padding: 6px 8px 7px 12px;
+  }
+  .tabs .tab:hover { background: var(--panel-2); color: var(--text); }
+  .tabs .tab.active {
+    background: var(--bg); color: var(--text);
+    border-color: var(--border); border-bottom: 1px solid var(--bg);
+  }
+  .tab-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tab-close, .tab-dup {
+    width: 16px; height: 16px; line-height: 15px; text-align: center;
+    border-radius: 50%; font-size: 13px; color: var(--muted); visibility: hidden;
+  }
+  .tab:hover .tab-close, .tab.active .tab-close,
+  .tab:hover .tab-dup, .tab.active .tab-dup { visibility: visible; }
+  .tab-dup { font-size: 11px; }
+  .tab-dup:hover { background: var(--accent); color: #fff; }
+  .tab-close:hover { background: var(--danger); color: #fff; }
+  .tabs .tab.drop-target {
+    background: rgba(74, 158, 255, 0.2); color: var(--text);
+    border-color: var(--accent); border-bottom: none;
+  }
+  .tabs .tab-new {
+    flex-shrink: 0; margin: 0 0 4px 6px; padding: 3px 10px;
+    background: transparent; border-color: transparent; color: var(--muted); font-size: 12px;
+  }
+  .tabs .tab-new:hover { color: var(--text); background: var(--panel-2); }
 
   main { flex: 1; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
 
@@ -50,6 +108,9 @@
     border: 1px solid var(--border); background: var(--panel); padding: 8px;
   }
   .rank-area h2 { font-size: 13px; margin: 0 0 8px; color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+  .rank-area-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .rank-area-head h2 { margin: 0; }
+  button.small { font-size: 12px; padding: 2px 8px; }
   .rank-images {
     display: flex; flex-wrap: wrap; align-content: flex-start;
     gap: 4px; min-height: 160px; padding: 4px; background: var(--panel-2);
@@ -65,14 +126,32 @@
   .img-card:hover { border-color: var(--accent); }
   .img-card:active { cursor: grabbing; }
   .img-card.dragging { opacity: 0.3; }
+  .img-card { user-select: none; -webkit-user-select: none; }
+  .img-card.selected::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    border: 3px solid var(--accent); background: rgba(74, 158, 255, 0.22);
+  }
+  /* Rubber-band box drawn while drag-selecting over empty space. */
+  .marquee {
+    position: absolute; z-index: 50; pointer-events: none;
+    border: 1px solid var(--accent); background: rgba(74, 158, 255, 0.15);
+  }
+  body.marquee-active { user-select: none; -webkit-user-select: none; }
+  /* "N" badge shown on the drag image when dragging a multi-selection. */
+  .drag-count {
+    position: absolute; top: 4px; right: 4px; z-index: 1;
+    min-width: 24px; height: 24px; padding: 0 6px; border-radius: 12px;
+    background: var(--accent); color: #fff; font-size: 13px; font-weight: 700;
+    line-height: 24px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  }
 
   .rank-num {
     position: absolute; top: 0; left: 0;
-    min-width: 20px; height: 20px; padding: 0 5px;
+    min-width: 15px; height: 15px; padding: 0 3px;
     background: var(--accent); color: #fff;
-    font-size: 12px; font-weight: 700; line-height: 20px;
+    font-size: 10px; font-weight: 700; line-height: 15px;
     text-align: center; pointer-events: none;
-    border-bottom-right-radius: 5px;
+    border-bottom-right-radius: 4px;
     text-shadow: 0 1px 2px rgba(0,0,0,0.4);
   }
 
@@ -93,6 +172,29 @@
   .img-card .remove { top: 2px; right: 2px; }
   .img-card .text-btn { bottom: 2px; left: 2px; top: auto; }
   .img-card:hover .remove, .img-card:hover .text-btn { display: block; }
+
+  /* Tier upper bound (UI only, never exported): per tier, one image can be
+     marked as the ceiling that everything else in the tier falls below. */
+  .img-card .bound-btn {
+    position: absolute; bottom: 2px; right: 2px;
+    width: 18px; height: 18px; border-radius: 50%;
+    background: rgba(0,0,0,0.7); color: #fff; border: none;
+    font-size: 9px; line-height: 18px; padding: 0; cursor: pointer; display: none;
+  }
+  .img-card .bound-btn:hover { background: var(--accent); }
+  .tier-items .img-card:hover .bound-btn { display: block; }
+  .img-card.bound-upper { --bound: #3ecf8e; }
+  .img-card.bound-upper .bound-btn { display: block; background: var(--bound); }
+  .img-card.bound-upper::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+    border: 3px solid var(--bound);
+  }
+  .bound-tag {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 2;
+    padding: 0 6px; height: 15px; line-height: 15px; border-radius: 0 0 4px 4px;
+    background: var(--bound); color: #111; font-size: 9px; font-weight: 700;
+    letter-spacing: 0.5px; text-transform: uppercase; pointer-events: none; white-space: nowrap;
+  }
 
   .img-bubble {
     position: absolute;
@@ -121,6 +223,85 @@
   }
   .file-drop-overlay.active { display: flex; }
 
+  /* Title row with the List / Tier mode switch. */
+  .title-row { display: flex; align-items: center; gap: 12px; }
+  .title-row .list-title { flex: 1; min-width: 0; }
+  .mode-toggle {
+    display: inline-flex; flex-shrink: 0;
+    border: 1px solid var(--border); border-radius: 4px; overflow: hidden;
+  }
+  .mode-toggle button { border: none; border-radius: 0; color: var(--muted); }
+  .mode-toggle button + button { border-left: 1px solid var(--border); }
+  .mode-toggle button.active { background: var(--accent); color: #fff; }
+
+  body.tier-mode #listArea, body:not(.tier-mode) #tierArea { display: none; }
+  body.tier-mode .top-limit { display: none; }
+
+  .tier-board { display: flex; flex-direction: column; gap: 2px; background: var(--bg); }
+  .tier-row { display: flex; align-items: stretch; background: var(--panel-2); }
+  .tier-label {
+    width: 120px; flex-shrink: 0; padding: 6px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 4px; text-align: center; word-break: break-word;
+  }
+  .tier-name, .tier-desc { max-width: 100%; cursor: text; outline: none; border-radius: 3px; }
+  .tier-name { min-width: 1ch; font-size: 22px; font-weight: 700; }
+  .tier-desc { font-size: 11px; font-weight: 500; line-height: 1.3; opacity: 0.85; }
+  .tier-name:focus, .tier-desc:focus { box-shadow: 0 0 0 2px var(--accent); }
+  /* An empty description shows a placeholder only while hovering or editing it. */
+  .tier-desc:empty::before { content: '+ description'; font-style: italic; opacity: 0.6; }
+  .tier-row:not(:hover) .tier-desc:empty:not(:focus) { display: none; }
+  .tier-row .tier-items { flex: 1; min-height: 160px; background: transparent; }
+  .tier-row .tier-items.drag-over { background: #3a3a3a; }
+  .tier-controls {
+    display: flex; flex-direction: column; justify-content: center; gap: 3px;
+    padding: 4px; background: var(--panel);
+  }
+  .tier-controls button { width: 24px; height: 22px; padding: 0; font-size: 11px; }
+  .tier-controls input[type=color] {
+    width: 24px; height: 22px; padding: 0; border: 1px solid var(--border);
+    border-radius: 4px; background: none; cursor: pointer;
+  }
+  .tier-actions { display: flex; gap: 6px; margin-top: 8px; }
+  button.auto-color.active {
+    color: #1a1a1a; border-color: transparent;
+    background: linear-gradient(90deg, #ff7f7f, #ffbf7f, #ffff7f, #7fff7f, #7fbfff, #bf7fff);
+  }
+
+  /* Groups: images can belong to one group; a hidden group's images are left
+     out of the board and the export. */
+  .group-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .group-bar-label {
+    font-size: 13px; color: var(--muted); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-right: 4px;
+  }
+  .group-hint { color: var(--muted); font-size: 12px; }
+  .group-chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 3px 2px 6px; font-size: 13px;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 4px;
+  }
+  .group-chip.drop-target { border-color: var(--accent); background: rgba(74, 158, 255, 0.2); }
+  .group-chip.is-hidden { opacity: 0.55; }
+  .group-chip.is-hidden .group-name { text-decoration: line-through; }
+  .group-chip input[type=color] {
+    -webkit-appearance: none; appearance: none;
+    width: 14px; height: 14px; padding: 0; border: none; background: none; cursor: pointer;
+  }
+  .group-chip input[type=color]::-webkit-color-swatch-wrapper { padding: 0; }
+  .group-chip input[type=color]::-webkit-color-swatch { border: none; border-radius: 50%; }
+  .group-chip input[type=color]::-moz-color-swatch { border: none; border-radius: 50%; }
+  .group-name { outline: none; min-width: 2ch; padding: 0 2px; border-radius: 3px; cursor: text; }
+  .group-name:focus { box-shadow: 0 0 0 2px var(--accent); }
+  .group-count { color: var(--muted); font-size: 11px; }
+  .group-chip button { font-size: 11px; padding: 1px 6px; }
+  .img-card .group-stripe {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 5px; pointer-events: none;
+  }
+  /* Group colors are off by default; membership then shows only on hover. */
+  body:not(.group-colors) .group-stripe,
+  body:not(.group-colors) .group-chip input[type=color] { display: none !important; }
+
   .toast {
     position: fixed; bottom: 20px; right: 20px;
     background: var(--panel-2); border: 1px solid var(--border);
@@ -135,26 +316,58 @@
   <h1>Ranking</h1>
   <button id="addImagesBtn">+ Add Images</button>
   <button id="captionsBtn" title="Populate captions on uncaptioned images using their filenames">Captions from filenames</button>
+  <button id="clearCaptionsBtn" title="Remove captions from all images">Clear captions</button>
   <span style="flex:1"></span>
   <span id="imageCount" style="color: var(--muted); font-size: 12px; margin-right: 12px;"></span>
   <span id="saveStatus" style="color: var(--muted); font-size: 12px; margin-right: 8px;"></span>
-  <button id="backupBtn" title="Download the ranking + images as a single .json file">Backup</button>
-  <button id="restoreBtn" title="Replace current state with a .json backup">Restore</button>
-  <button id="exportBtn" class="primary">Export JPG</button>
-  <button id="resetBtn" class="danger">Reset</button>
+  <button id="backupBtn" title="Download this ranking + its images as a single .json file">Backup</button>
+  <button id="restoreBtn" title="Load one or more .json backups, each as a new ranking tab (you can also drop .json files on the page)">Import</button>
+  <span class="export-group">
+    <button id="exportBtn" class="primary">Export JPG</button>
+    <label class="export-limit top-limit" title="Only export the top N ranked images — leave blank to export all">
+      top <input id="exportLimit" type="number" min="1" step="1" placeholder="all" />
+    </label>
+    <label class="export-limit" title="Max width of the exported image in pixels (aspect ratio is kept) — leave blank for the normal size">
+      w <input id="exportWidth" type="number" min="1" step="1" placeholder="auto" style="width: 44px" />
+    </label>
+    <label class="export-limit" title="Max height of the exported image in pixels (aspect ratio is kept) — leave blank for the normal size">
+      h <input id="exportHeight" type="number" min="1" step="1" placeholder="auto" style="width: 44px" />
+    </label>
+  </span>
+  <button id="resetBtn" class="danger" title="Move every image in the current mode back to Unranked (the other mode and the images themselves are kept)">Reset</button>
   <input type="file" id="fileInput" accept="image/*" multiple style="display:none" />
-  <input type="file" id="restoreInput" accept="application/json,.json" style="display:none" />
+  <input type="file" id="restoreInput" accept="application/json,.json" multiple style="display:none" />
 </header>
+<nav class="tabs" id="tabs"></nav>
 
 <main>
-  <input id="listName" class="list-title" type="text" placeholder="Untitled ranking"
-         title="Title for this ranking — shown at the top of the export and used in export & backup filenames" />
-  <div class="rank-area">
+  <div class="title-row">
+    <input id="listName" class="list-title" type="text" placeholder="Untitled ranking"
+           title="Title for this ranking — shown at the top of the export and used in export & backup filenames" />
+    <span class="mode-toggle" title="Rank as an ordered list or as a tier list (each mode keeps its own arrangement)">
+      <button id="modeListBtn" data-mode="list">List</button>
+      <button id="modeTierBtn" data-mode="tier">Tier</button>
+    </span>
+  </div>
+  <div class="group-bar" id="groupBar"></div>
+  <div class="rank-area" id="listArea">
     <h2>Ranking (best &rarr; worst, left to right)</h2>
     <div class="rank-images" id="ranked" data-tier="ranked"></div>
   </div>
+  <div class="rank-area" id="tierArea">
+    <h2>Tiers</h2>
+    <div class="tier-board" id="tierBoard"></div>
+    <div class="tier-actions">
+      <button id="addTierBtn" class="small">+ Add tier</button>
+      <button id="autoColorBtn" class="small auto-color"
+              title="Color the tiers as an evenly spaced rainbow, top to bottom, and keep it that way as tiers are added, removed or reordered (picking a color by hand turns this off)">Auto colors: off</button>
+    </div>
+  </div>
   <div class="rank-area">
-    <h2>Unranked</h2>
+    <div class="rank-area-head">
+      <h2>Unranked</h2>
+      <button id="sortPoolBtn" class="small" title="Sort unranked images alphabetically by filename (click again to reverse)">Sort A&ndash;Z</button>
+    </div>
     <div class="rank-images" id="pool" data-tier="pool"></div>
   </div>
 </main>
@@ -176,14 +389,21 @@ function openDB() {
     req.onerror = () => reject(req.error);
   });
 }
-// Each record lives under its own key: 'layout' holds the (tiny) ordering, and
-// 'img:<id>' holds one image's blob. This means a reorder writes only the small
-// layout record instead of rewriting every image blob — the old behaviour that
-// saturated IndexedDB and left saves stuck on "Saving...". onabort is handled
-// so a failed/aborted transaction rejects instead of hanging forever.
-const LAYOUT_KEY = 'layout';
-const IMG_PREFIX = 'img:';
+// Every ranking's records live under its own 'r:<rankingId>:' prefix:
+// 'r:<rid>:layout' holds the (tiny) ordering + name, and 'r:<rid>:img:<id>'
+// holds one image's blob. A reorder writes only the small layout record
+// instead of rewriting every image blob, and switching/deleting a ranking
+// touches only its own key range. 'meta' holds the tab order and which
+// ranking is open. onabort is handled so a failed/aborted transaction rejects
+// instead of hanging forever.
+const META_KEY = 'meta';
+// Pre-multi-ranking keys, migrated into a ranking on first load.
+const OLD_LAYOUT_KEY = 'layout';
+const OLD_IMG_PREFIX = 'img:';
 const LEGACY_KEY = 'current';
+
+const rankingPrefix = (rid) => `r:${rid}:`;
+const prefixRange = (prefix) => IDBKeyRange.bound(prefix, prefix + '￿');
 
 async function dbPut(key, value) {
   const db = await openDB();
@@ -195,23 +415,46 @@ async function dbPut(key, value) {
     tx.onabort = () => reject(tx.error || new Error('save aborted (storage quota?)'));
   });
 }
-async function dbDelete(key) {
+// Accepts a single key or an IDBKeyRange.
+async function dbDelete(keyOrRange) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, 'readwrite');
-    tx.objectStore(STORE).delete(key);
+    tx.objectStore(STORE).delete(keyOrRange);
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error || new Error('delete error'));
     tx.onabort = () => reject(tx.error || new Error('delete aborted'));
   });
 }
-async function dbGetAll() {
+async function dbGet(key) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).get(key);
+    tx.oncomplete = () => resolve(req.result);
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+// Returns just the keys within `range` (no values, so no image blobs are read).
+async function dbGetKeys(range) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE, 'readonly');
+    const req = tx.objectStore(STORE).getAllKeys(range);
+    tx.oncomplete = () => resolve(req.result);
+    tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
+  });
+}
+// Returns {key: value} for every record, or only those within `range`.
+async function dbGetAll(range) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE, 'readonly');
     const store = tx.objectStore(STORE);
-    const keysReq = store.getAllKeys();
-    const valsReq = store.getAll();
+    const keysReq = store.getAllKeys(range);
+    const valsReq = store.getAll(range);
     tx.oncomplete = () => {
       const out = {};
       keysReq.result.forEach((k, i) => { out[k] = valsReq.result[i]; });
@@ -221,29 +464,435 @@ async function dbGetAll() {
     tx.onabort = () => reject(tx.error);
   });
 }
-async function dbClear() {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE, 'readwrite');
-    tx.objectStore(STORE).clear();
-    tx.oncomplete = () => resolve();
-    tx.onerror = () => reject(tx.error);
-    tx.onabort = () => reject(tx.error);
-  });
-}
 
 // ===== State =====
+let rankings = [];     // [{id, name}] in tab order
+let activeId = null;   // id of the ranking currently open
+// List and tier mode each keep their own arrangement of the same images, so
+// flipping between modes never loses either one. `tiers` stays null until the
+// ranking is first opened in tier mode.
 let state = {
-  name: '',   // user-given title for this list
-  ranked: [], // [imageId] in rank order, left to right
-  pool: [],   // [imageId]
-  images: {}, // {id: {blob, name, url, annotation}}
+  name: '',     // user-given title for this list
+  mode: 'list', // 'list' | 'tier'
+  ranked: [],   // list mode: [imageId] in rank order, left to right
+  pool: [],     // list mode: unranked [imageId]
+  tiers: null,  // tier mode: [{id, label, color, items: [imageId]}] top to bottom
+  tierPool: [], // tier mode: unranked [imageId]
+  groups: [],   // [{id, name, color, hidden}] — shared by both modes
+  groupOf: {},  // {imageId: groupId}; an image is in at most one group
+  images: {},   // {id: {blob, name, url, annotation}}
 };
 let nextId = 1;
 const newId = () => 'id_' + (nextId++);
+const newRankingId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+
+// Storage keys for the open ranking.
+const layoutKey = (rid = activeId) => rankingPrefix(rid) + 'layout';
+const imgKey = (id, rid = activeId) => rankingPrefix(rid) + 'img:' + id;
 
 function freshState() {
-  state = { name: '', ranked: [], pool: [], images: {} };
+  state = { name: '', mode: 'list', ranked: [], pool: [], tiers: null, tierPool: [], tierAutoColor: false, groups: [], groupOf: {}, images: {} };
+}
+
+function layoutRecord() {
+  return {
+    name: state.name, mode: state.mode,
+    ranked: state.ranked, pool: state.pool,
+    tiers: state.tiers, tierPool: state.tierPool, tierAutoColor: state.tierAutoColor,
+    groups: state.groups, groupOf: state.groupOf,
+  };
+}
+
+// ===== Tiers =====
+const TIER_COLORS = ['#ff7f7f', '#ffbf7f', '#ffdf7f', '#ffff7f', '#bfff7f', '#7fff7f',
+                     '#7fffff', '#7fbfff', '#7f7fff', '#ff7fff', '#bf7fbf'];
+const TIER_LABELS = ['S', ...'ABCDEFGHIJKLMNOPQRTUVWXYZ'];  // S, then A–Z (S already used)
+const newTierId = () => 't' + Math.random().toString(36).slice(2, 9);
+
+function defaultTiers() {
+  return TIER_LABELS.slice(0, 5).map((label, i) =>
+    ({ id: newTierId(), label, description: '', color: TIER_COLORS[i], items: [] }));
+}
+
+// Coerce stored/imported tier data into a valid shape (null if absent).
+function sanitizeTiers(tiers) {
+  if (!Array.isArray(tiers)) return null;
+  const ids = new Set();
+  return tiers.filter(t => t && typeof t === 'object').map((t, i) => {
+    let id = typeof t.id === 'string' && t.id ? t.id : newTierId();
+    while (ids.has(id)) id = newTierId();
+    ids.add(id);
+    return {
+      id,
+      label: typeof t.label === 'string' ? t.label : '',
+      description: typeof t.description === 'string' ? t.description : '',
+      color: /^#[0-9a-f]{6}$/i.test(t.color) ? t.color : TIER_COLORS[i % TIER_COLORS.length],
+      items: Array.isArray(t.items) ? t.items.map(String) : [],
+      upper: typeof t.upper === 'string' ? t.upper : null,
+    };
+  });
+}
+
+// First time a ranking enters tier mode: default tiers, everything unranked.
+function ensureTiers() {
+  if (state.tiers) return;
+  state.tiers = defaultTiers();
+  state.tierPool = [...state.ranked, ...state.pool];
+  state.tierAutoColor = true;
+  applyTierGradient();
+}
+
+function hslToHex(h, s, l) {
+  s /= 100; l /= 100;
+  const a = s * Math.min(l, 1 - l);
+  const f = (n) => {
+    const k = (n + h / 30) % 12;
+    const c = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+    return Math.round(c * 255).toString(16).padStart(2, '0');
+  };
+  return '#' + f(0) + f(8) + f(4);
+}
+
+// Pastel rainbow by position, top to bottom: hues 30° apart (red, orange,
+// yellow, lime, green, ... — the classic tier-list look), spreading out evenly
+// once there are too many tiers to fit before wrapping back toward red.
+function applyTierGradient() {
+  const n = state.tiers.length;
+  const step = n > 1 ? Math.min(30, 280 / (n - 1)) : 0;
+  state.tiers.forEach((t, i) => { t.color = hslToHex(i * step, 100, 75); });
+}
+
+// After the tier list's structure changes, recolor if auto colors is on.
+function tiersChanged() {
+  if (state.tierAutoColor) applyTierGradient();
+  render();
+  saveLayout();
+}
+
+function toggleAutoColor() {
+  state.tierAutoColor = !state.tierAutoColor;
+  if (state.tierAutoColor) applyTierGradient();
+  render();
+  saveLayout();
+  showToast(state.tierAutoColor ? 'Auto colors on' : 'Auto colors off — colors kept as they are');
+}
+
+// Make each mode's arrangement hold every image exactly once: drop unknown or
+// duplicate ids and put any image that's missing into that mode's pool.
+function normalizeLayout() {
+  const seen = new Set();
+  const clean = (list) => list.filter(id => state.images[id] && !seen.has(id) && seen.add(id));
+  const addMissing = (pool) => { for (const id in state.images) if (!seen.has(id)) pool.push(id); };
+  state.ranked = clean(state.ranked);
+  state.pool = clean(state.pool);
+  addMissing(state.pool);
+  if (state.tiers) {
+    seen.clear();
+    for (const t of state.tiers) t.items = clean(t.items);
+    state.tierPool = clean(state.tierPool);
+    addMissing(state.tierPool);
+  }
+  // Keep only memberships of existing images in existing groups.
+  const gids = new Set(state.groups.map(g => g.id));
+  const groupOf = {};
+  for (const id in state.groupOf) {
+    if (state.images[id] && gids.has(state.groupOf[id])) groupOf[id] = state.groupOf[id];
+  }
+  state.groupOf = groupOf;
+}
+
+function textColorFor(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const lum = (0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return lum > 0.55 ? '#1a1a1a' : '#fff';
+}
+
+// ===== Tier upper bound =====
+// The bound only means something while its image sits in that tier, so drop
+// it once the image has been moved out (or removed).
+function pruneBounds() {
+  for (const t of state.tiers || []) {
+    if (t.upper && !t.items.includes(t.upper)) t.upper = null;
+  }
+}
+
+// Toggle imgId as its tier's upper bound. Marking it moves the image to the
+// front of the tier, since everything else in the tier falls below it.
+function toggleBound(imgId) {
+  const tier = (state.tiers || []).find(t => t.items.includes(imgId));
+  if (!tier) return;
+  if (tier.upper === imgId) {
+    tier.upper = null;
+  } else {
+    tier.upper = imgId;
+    tier.items.splice(tier.items.indexOf(imgId), 1);
+    tier.items.unshift(imgId);
+  }
+  render();
+  saveLayout();
+}
+
+// Show/hide a card's upper-bound styling.
+function setCardBound(card, isUpper) {
+  card.classList.toggle('bound-upper', isUpper);
+  card._boundTag.style.display = isUpper ? '' : 'none';
+}
+
+// ===== Groups =====
+const GROUP_COLORS = ['#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
+                      '#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#9a6324'];
+const newGroupId = () => 'g' + Math.random().toString(36).slice(2, 9);
+
+// Coerce stored/imported group data into a valid shape.
+function sanitizeGroups(groups) {
+  if (!Array.isArray(groups)) return [];
+  const ids = new Set();
+  return groups.filter(g => g && typeof g === 'object').map((g, i) => {
+    let id = typeof g.id === 'string' && g.id ? g.id : newGroupId();
+    while (ids.has(id)) id = newGroupId();
+    ids.add(id);
+    return {
+      id,
+      name: typeof g.name === 'string' ? g.name : '',
+      color: /^#[0-9a-f]{6}$/i.test(g.color) ? g.color : GROUP_COLORS[i % GROUP_COLORS.length],
+      hidden: g.hidden === true,
+    };
+  });
+}
+
+function sanitizeGroupOf(map) {
+  return map && typeof map === 'object' && !Array.isArray(map) ? { ...map } : {};
+}
+
+function groupOfImage(imgId) {
+  const gid = state.groupOf[imgId];
+  return gid ? state.groups.find(g => g.id === gid) || null : null;
+}
+
+function isHidden(imgId) {
+  const g = groupOfImage(imgId);
+  return !!(g && g.hidden);
+}
+
+// The ids of a list that are actually shown (not in a hidden group).
+function visible(list) {
+  return list.filter(id => !isHidden(id));
+}
+
+function groupMembers(gid) {
+  return Object.keys(state.groupOf).filter(id => state.groupOf[id] === gid);
+}
+
+// Group stripe + tooltip on a card.
+function setCardGroup(card, imgId) {
+  const g = groupOfImage(imgId);
+  card._groupStripe.style.display = g ? '' : 'none';
+  if (g) card._groupStripe.style.background = g.color;
+  const name = (state.images[imgId] && state.images[imgId].name) || '';
+  card.title = g ? `${name}\nGroup: ${g.name.trim() || 'Untitled group'}` : name;
+}
+
+function syncCardGroups() {
+  for (const [id, card] of cardCache) setCardGroup(card, id);
+}
+
+// gid null removes the images from their group.
+function assignGroup(ids, gid) {
+  const g = gid && state.groups.find(x => x.id === gid);
+  for (const id of ids) {
+    if (g) state.groupOf[id] = gid; else delete state.groupOf[id];
+    if (g && g.hidden) selected.delete(id);  // can't keep hidden cards selected
+  }
+  render();
+  saveLayout();
+  const n = `${ids.length} image${ids.length === 1 ? '' : 's'}`;
+  showToast(g ? `Added ${n} to ${g.name.trim() || 'group'}` : `Removed ${n} from their group`);
+}
+
+function newGroup() {
+  const used = new Set(state.groups.map(g => g.color));
+  const names = new Set(state.groups.map(g => g.name.trim()));
+  let n = 1;
+  while (names.has(`Group ${n}`)) n++;
+  const g = {
+    id: newGroupId(),
+    name: `Group ${n}`,
+    color: GROUP_COLORS.find(c => !used.has(c)) || GROUP_COLORS[state.groups.length % GROUP_COLORS.length],
+    hidden: false,
+  };
+  state.groups.push(g);
+  const ids = selectionInOrder();
+  for (const id of ids) state.groupOf[id] = g.id;
+  render();
+  saveLayout();
+  // Start renaming right away.
+  const nameEl = document.querySelector(`#groupBar [data-group-id="${g.id}"] .group-name`);
+  if (nameEl) {
+    nameEl.focus();
+    getSelection().selectAllChildren(nameEl);
+  }
+}
+
+function toggleGroupHidden(gid) {
+  const g = state.groups.find(x => x.id === gid);
+  if (!g) return;
+  g.hidden = !g.hidden;
+  if (g.hidden) for (const id of groupMembers(gid)) selected.delete(id);
+  render();
+  saveLayout();
+}
+
+// Deleting a group only ungroups its images; nothing else changes.
+function deleteGroup(gid) {
+  state.groups = state.groups.filter(g => g.id !== gid);
+  for (const id of groupMembers(gid)) delete state.groupOf[id];
+  render();
+  saveLayout();
+}
+
+// Whether group colors are drawn (card stripes + chip swatches). A per-browser
+// preference, off by default.
+let groupColors = false;
+try { groupColors = localStorage.getItem('groupColors') === 'on'; } catch (e) {}
+document.body.classList.toggle('group-colors', groupColors);
+
+function toggleGroupColors() {
+  groupColors = !groupColors;
+  try { localStorage.setItem('groupColors', groupColors ? 'on' : 'off'); } catch (e) {}
+  document.body.classList.toggle('group-colors', groupColors);
+  renderGroupBar();
+}
+
+function renderGroupBar() {
+  const bar = document.getElementById('groupBar');
+  bar.replaceChildren();
+  const label = document.createElement('span');
+  label.className = 'group-bar-label';
+  label.textContent = 'Groups';
+  bar.appendChild(label);
+  const sel = selectionInOrder();
+
+  for (const g of state.groups) {
+    const members = groupMembers(g.id);
+    const chip = document.createElement('div');
+    chip.className = 'group-chip' + (g.hidden ? ' is-hidden' : '');
+    chip.dataset.groupId = g.id;
+
+    const color = document.createElement('input');
+    color.type = 'color';
+    color.value = g.color;
+    color.title = 'Group color';
+    color.addEventListener('input', () => {
+      g.color = color.value;
+      syncCardGroups();
+      saveLayout();
+    });
+    chip.appendChild(color);
+
+    const name = document.createElement('span');
+    name.className = 'group-name';
+    try { name.contentEditable = 'plaintext-only'; } catch (e) { name.contentEditable = 'true'; }
+    name.spellcheck = false;
+    name.textContent = g.name;
+    name.title = 'Click to rename this group';
+    name.addEventListener('input', () => {
+      g.name = name.textContent;
+      saveLayout();
+    });
+    name.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); name.blur(); }
+    });
+    name.addEventListener('blur', () => {
+      if (!name.textContent.trim()) name.textContent = '';
+      syncCardGroups();
+    });
+    chip.appendChild(name);
+
+    const count = document.createElement('span');
+    count.className = 'group-count';
+    count.textContent = members.length;
+    chip.appendChild(count);
+
+    const btn = (text, title, onClick) => {
+      const b = document.createElement('button');
+      b.textContent = text;
+      b.title = title;
+      b.addEventListener('click', onClick);
+      chip.appendChild(b);
+    };
+    const toAdd = sel.filter(id => state.groupOf[id] !== g.id);
+    if (toAdd.length) {
+      btn(`+${toAdd.length}`, `Add the ${toAdd.length} selected image${toAdd.length === 1 ? '' : 's'} to this group`,
+        () => assignGroup(toAdd, g.id));
+    }
+    btn(g.hidden ? 'Show' : 'Hide',
+      g.hidden ? 'Show this group\'s images again' : 'Hide this group\'s images (also leaves them out of the export)',
+      () => toggleGroupHidden(g.id));
+    btn('×', 'Delete group (its images stay, just ungrouped)', () => deleteGroup(g.id));
+
+    // Dropping cards on a chip adds them to that group.
+    chip.addEventListener('dragover', (e) => {
+      if (!dragState) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      chip.classList.add('drop-target');
+    });
+    chip.addEventListener('dragleave', (e) => {
+      if (!chip.contains(e.relatedTarget)) chip.classList.remove('drop-target');
+    });
+    chip.addEventListener('drop', (e) => {
+      chip.classList.remove('drop-target');
+      if (!dragState) return;
+      e.preventDefault();
+      assignGroup(dragState.ids, g.id);
+    });
+    bar.appendChild(chip);
+  }
+
+  const add = document.createElement('button');
+  add.className = 'small';
+  add.textContent = sel.length ? `+ New group from ${sel.length} selected` : '+ New group';
+  add.title = 'Create a group (from the selected images, if any). Add more later by selecting images and clicking a group\'s +N, or by dragging images onto it.';
+  add.addEventListener('click', newGroup);
+  bar.appendChild(add);
+
+  const grouped = sel.filter(id => state.groupOf[id]);
+  if (grouped.length) {
+    const un = document.createElement('button');
+    un.className = 'small';
+    un.textContent = 'Ungroup selected';
+    un.title = 'Remove the selected images from their groups';
+    un.addEventListener('click', () => assignGroup(grouped, null));
+    bar.appendChild(un);
+  }
+  if (state.groups.length) {
+    const colors = document.createElement('button');
+    colors.className = 'small';
+    colors.textContent = groupColors ? 'Colors: on' : 'Colors: off';
+    colors.title = 'Show or hide group colors on the images (hover an image to see its group either way)';
+    colors.addEventListener('click', toggleGroupColors);
+    bar.appendChild(colors);
+  }
+  if (!state.groups.length && !sel.length) {
+    const hint = document.createElement('span');
+    hint.className = 'group-hint';
+    hint.textContent = 'Select images, then create a group to show/hide them together.';
+    bar.appendChild(hint);
+  }
+}
+
+function nextTierLabel() {
+  const used = new Set(state.tiers.map(t => t.label.trim()));
+  return TIER_LABELS.find(l => !used.has(l)) || '?';
+}
+
+function setMode(mode) {
+  if (state.mode === mode) return;
+  state.mode = mode;
+  clearSelection();
+  if (mode === 'tier') ensureTiers();
+  render();
+  saveLayout();
 }
 
 // Turn a list name into a filename-safe slug. Falls back to 'ranking' so the
@@ -272,32 +921,97 @@ function adoptImageRecord(id, rec) {
   };
 }
 
-async function loadState() {
-  const all = await dbGetAll();
-  const imgKeys = Object.keys(all).filter(k => k.startsWith(IMG_PREFIX));
-
-  if (all[LAYOUT_KEY] || imgKeys.length) {
-    // New per-key format.
-    const layout = all[LAYOUT_KEY] || { ranked: [], pool: [] };
-    state = { name: layout.name || '', ranked: layout.ranked || [], pool: layout.pool || [], images: {} };
-    for (const k of imgKeys) adoptImageRecord(k.slice(IMG_PREFIX.length), all[k]);
-    computeNextId();
-  } else if (all[LEGACY_KEY]) {
-    // Migrate the old single-blob value into per-key records, then drop it.
-    const old = all[LEGACY_KEY];
-    state = { name: old.name || '', ranked: old.ranked || [], pool: old.pool || [], images: {} };
-    for (const id in old.images) adoptImageRecord(id, old.images[id]);
-    computeNextId();
-    try {
-      await persistAllImages();
-      await dbPut(LAYOUT_KEY, { name: state.name, ranked: state.ranked, pool: state.pool });
-      await dbDelete(LEGACY_KEY);
-    } catch (e) {
-      console.error('Migration save failed:', e);
-    }
-  } else {
-    freshState();
+function releaseImages() {
+  for (const id in state.images) {
+    if (state.images[id].url) URL.revokeObjectURL(state.images[id].url);
   }
+  cardCache.clear();
+}
+
+async function saveMeta() {
+  await dbPut(META_KEY, { order: rankings.map(r => r.id), active: activeId });
+}
+
+// Load the tab list, migrating pre-multi-ranking data into a first ranking.
+async function initStore() {
+  const meta = await dbGet(META_KEY);
+  if (meta && Array.isArray(meta.order)) {
+    rankings = [];
+    for (const rid of meta.order) {
+      const layout = await dbGet(layoutKey(rid));
+      rankings.push({ id: rid, name: (layout && layout.name) || '' });
+    }
+    activeId = rankings.some(r => r.id === meta.active) ? meta.active : null;
+  } else {
+    await migrateOldData();
+  }
+  if (rankings.length === 0) {
+    const rid = newRankingId();
+    await dbPut(layoutKey(rid), { name: '', ranked: [], pool: [] });
+    rankings = [{ id: rid, name: '' }];
+  }
+  if (!activeId) activeId = rankings[0].id;
+  await saveMeta();
+  await loadRanking(activeId);
+}
+
+async function migrateOldData() {
+  rankings = [];
+  activeId = null;
+  const all = await dbGetAll();
+  const imgKeys = Object.keys(all).filter(k => k.startsWith(OLD_IMG_PREFIX));
+  let layout, images = {};
+  if (all[OLD_LAYOUT_KEY] || imgKeys.length) {
+    layout = all[OLD_LAYOUT_KEY] || {};
+    for (const k of imgKeys) images[k.slice(OLD_IMG_PREFIX.length)] = all[k];
+  } else if (all[LEGACY_KEY]) {
+    layout = all[LEGACY_KEY];
+    images = layout.images || {};
+  } else {
+    return;  // nothing to migrate
+  }
+  const rid = newRankingId();
+  for (const id in images) {
+    const rec = images[id];
+    await dbPut(imgKey(id, rid), { blob: rec.blob, name: rec.name, annotation: rec.annotation || null });
+  }
+  const name = layout.name || '';
+  await dbPut(layoutKey(rid), { name, ranked: layout.ranked || [], pool: layout.pool || [] });
+  rankings = [{ id: rid, name }];
+  activeId = rid;
+  // Only drop the old records once the new ones are safely written.
+  await dbDelete(OLD_LAYOUT_KEY);
+  await dbDelete(LEGACY_KEY);
+  for (const k of imgKeys) await dbDelete(k);
+}
+
+async function loadRanking(rid) {
+  const prefix = rankingPrefix(rid);
+  const recs = await dbGetAll(prefixRange(prefix));
+  releaseImages();
+  selected.clear();
+  selectAnchor = null;
+  const layout = recs[layoutKey(rid)] || {};
+  state = {
+    name: layout.name || '',
+    mode: layout.mode === 'tier' ? 'tier' : 'list',
+    ranked: layout.ranked || [],
+    pool: layout.pool || [],
+    tiers: sanitizeTiers(layout.tiers),
+    tierPool: layout.tierPool || [],
+    tierAutoColor: layout.tierAutoColor === true,
+    groups: sanitizeGroups(layout.groups),
+    groupOf: sanitizeGroupOf(layout.groupOf),
+    images: {},
+  };
+  const imgPrefix = prefix + 'img:';
+  for (const k in recs) {
+    if (k.startsWith(imgPrefix)) adoptImageRecord(k.slice(imgPrefix.length), recs[k]);
+  }
+  if (state.mode === 'tier') ensureTiers();
+  normalizeLayout();
+  computeNextId();
+  activeId = rid;
 }
 
 function imageRecord(id) {
@@ -305,26 +1019,31 @@ function imageRecord(id) {
   return { blob: im.blob, name: im.name, annotation: im.annotation || null };
 }
 
-async function persistAllImages() {
-  for (const id in state.images) {
-    await dbPut(IMG_PREFIX + id, imageRecord(id));
-  }
-}
-
 // Layout (ordering) save: debounced and tiny, so frequent reorders are cheap.
 let layoutSaveTimer = null;
 function saveLayout() {
   if (layoutSaveTimer) clearTimeout(layoutSaveTimer);
   setSaveStatus('Saving...');
-  layoutSaveTimer = setTimeout(async () => {
-    try {
-      await dbPut(LAYOUT_KEY, { name: state.name, ranked: state.ranked, pool: state.pool });
-      setSaveStatus('Saved');
-      setTimeout(() => setSaveStatus(''), 1200);
-    } catch (e) {
-      setSaveStatus('Save failed: ' + e.message);
-    }
-  }, 250);
+  layoutSaveTimer = setTimeout(writeLayout, 250);
+}
+
+async function writeLayout() {
+  layoutSaveTimer = null;
+  try {
+    await dbPut(layoutKey(), layoutRecord());
+    setSaveStatus('Saved');
+    setTimeout(() => setSaveStatus(''), 1200);
+  } catch (e) {
+    setSaveStatus('Save failed: ' + e.message);
+  }
+}
+
+// Write any pending layout save now — called before switching rankings so the
+// debounced save doesn't land under the wrong ranking.
+async function flushLayout() {
+  if (!layoutSaveTimer) return;
+  clearTimeout(layoutSaveTimer);
+  await writeLayout();
 }
 
 // Image saves are immediate but targeted — only the one changed image is written.
@@ -332,7 +1051,7 @@ async function saveImage(id) {
   if (!state.images[id]) return;
   setSaveStatus('Saving...');
   try {
-    await dbPut(IMG_PREFIX + id, imageRecord(id));
+    await dbPut(imgKey(id), imageRecord(id));
     setSaveStatus('Saved');
     setTimeout(() => setSaveStatus(''), 1200);
   } catch (e) {
@@ -342,7 +1061,7 @@ async function saveImage(id) {
 
 async function deleteImageRecord(id) {
   try {
-    await dbDelete(IMG_PREFIX + id);
+    await dbDelete(imgKey(id));
   } catch (e) {
     setSaveStatus('Save failed: ' + e.message);
   }
@@ -350,6 +1069,183 @@ async function deleteImageRecord(id) {
 
 function setSaveStatus(s) {
   document.getElementById('saveStatus').textContent = s;
+}
+
+// ===== Rankings (tabs) =====
+function renderTabs() {
+  const bar = document.getElementById('tabs');
+  bar.replaceChildren();
+  for (const r of rankings) {
+    const tab = document.createElement('button');
+    tab.className = 'tab' + (r.id === activeId ? ' active' : '');
+    tab.title = r.name || 'Untitled ranking';
+    const label = document.createElement('span');
+    label.className = 'tab-label';
+    label.textContent = r.name.trim() || 'Untitled';
+    tab.appendChild(label);
+    const dup = document.createElement('span');
+    dup.className = 'tab-dup';
+    dup.textContent = '⧉';
+    dup.title = 'Duplicate this ranking';
+    dup.addEventListener('click', (e) => {
+      e.stopPropagation();
+      duplicateRanking(r.id);
+    });
+    tab.appendChild(dup);
+    const close = document.createElement('span');
+    close.className = 'tab-close';
+    close.textContent = '×';
+    close.title = 'Delete this ranking';
+    close.addEventListener('click', (e) => {
+      e.stopPropagation();
+      deleteRanking(r.id);
+    });
+    tab.appendChild(close);
+    tab.addEventListener('click', () => switchRanking(r.id));
+    if (r.id !== activeId) setupTabDrop(tab, r.id);
+    bar.appendChild(tab);
+  }
+  const add = document.createElement('button');
+  add.className = 'tab-new';
+  add.textContent = '+ New ranking';
+  add.addEventListener('click', newRanking);
+  bar.appendChild(add);
+}
+
+// Dropping an image card on another ranking's tab copies it into that
+// ranking's unranked pool; the image stays where it is in this ranking.
+function setupTabDrop(tab, rid) {
+  tab.addEventListener('dragover', (e) => {
+    if (!dragState) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    tab.classList.add('drop-target');
+  });
+  tab.addEventListener('dragleave', (e) => {
+    if (!tab.contains(e.relatedTarget)) tab.classList.remove('drop-target');
+  });
+  tab.addEventListener('drop', (e) => {
+    tab.classList.remove('drop-target');
+    if (!dragState) return;
+    e.preventDefault();
+    copyImagesToRanking(dragState.ids, rid);
+  });
+}
+
+async function copyImagesToRanking(imgIds, rid) {
+  const recs = imgIds.filter(id => state.images[id]).map(imageRecord);
+  if (recs.length === 0) return;
+  const target = rankings.find(r => r.id === rid);
+  try {
+    // Pick ids that are free in the target ranking (ids are per-ranking).
+    const imgPrefix = rankingPrefix(rid) + 'img:';
+    let maxId = 0;
+    for (const k of await dbGetKeys(prefixRange(imgPrefix))) {
+      const m = /^id_(\d+)$/.exec(k.slice(imgPrefix.length));
+      if (m) maxId = Math.max(maxId, +m[1]);
+    }
+    const newIds = recs.map((_, i) => 'id_' + (maxId + 1 + i));
+    const layout = (await dbGet(layoutKey(rid))) || { name: '', ranked: [], pool: [] };
+    for (let i = 0; i < recs.length; i++) await dbPut(imgKey(newIds[i], rid), recs[i]);
+    const next = { ...layout, pool: [...(layout.pool || []), ...newIds] };
+    if (Array.isArray(layout.tiers)) next.tierPool = [...(layout.tierPool || []), ...newIds];
+    await dbPut(layoutKey(rid), next);
+    const label = target && target.name.trim() ? `"${target.name.trim()}"` : 'Untitled';
+    showToast(`Copied ${recs.length > 1 ? recs.length + ' images ' : ''}to ${label}`);
+  } catch (e) {
+    setSaveStatus('Copy failed: ' + e.message);
+  }
+}
+
+function showActive() {
+  syncNameInput();
+  render();
+  renderTabs();
+}
+
+async function switchRanking(rid) {
+  if (rid === activeId) return;
+  await flushLayout();
+  await loadRanking(rid);
+  showActive();
+  saveMeta();
+}
+
+async function newRanking() {
+  await flushLayout();
+  const rid = newRankingId();
+  await dbPut(layoutKey(rid), { name: '', ranked: [], pool: [] });
+  rankings.push({ id: rid, name: '' });
+  await loadRanking(rid);
+  showActive();
+  await saveMeta();
+  document.getElementById('listName').focus();
+}
+
+// Copy every record of a ranking (layout + images) under a new ranking id,
+// place the copy right after the original, and open it.
+async function duplicateRanking(rid) {
+  const src = rankings.find(x => x.id === rid);
+  if (!src) return;
+  await flushLayout();  // make sure the stored layout matches what's on screen
+  const nid = newRankingId();
+  const name = src.name.trim() ? `${src.name.trim()} (copy)` : '';
+  setSaveStatus('Duplicating...');
+  try {
+    const oldPrefix = rankingPrefix(rid);
+    const recs = await dbGetAll(prefixRange(oldPrefix));
+    for (const k in recs) {
+      const key = rankingPrefix(nid) + k.slice(oldPrefix.length);
+      const value = key === layoutKey(nid) ? { ...recs[k], name } : recs[k];
+      await dbPut(key, value);
+    }
+    if (!recs[layoutKey(rid)]) await dbPut(layoutKey(nid), { name, ranked: [], pool: [] });
+  } catch (e) {
+    await dbDelete(prefixRange(rankingPrefix(nid))).catch(() => {});
+    setSaveStatus('Duplicate failed: ' + e.message);
+    return;
+  }
+  setSaveStatus('');
+  rankings.splice(rankings.indexOf(src) + 1, 0, { id: nid, name });
+  await loadRanking(nid);
+  showActive();
+  await saveMeta();
+  showToast('Ranking duplicated');
+}
+
+async function deleteRanking(rid) {
+  const r = rankings.find(x => x.id === rid);
+  if (!r) return;
+  const label = r.name.trim() ? `"${r.name.trim()}"` : 'this untitled ranking';
+  if (!confirm(`Delete ${label} and all its images? This cannot be undone.`)) return;
+  if (rid === activeId) {
+    clearTimeout(layoutSaveTimer);
+    layoutSaveTimer = null;
+  }
+  const idx = rankings.indexOf(r);
+  rankings.splice(idx, 1);
+  try {
+    await dbDelete(prefixRange(rankingPrefix(rid)));
+  } catch (e) {
+    setSaveStatus('Delete failed: ' + e.message);
+  }
+  if (rankings.length === 0) {
+    const nid = newRankingId();
+    await dbPut(layoutKey(nid), { name: '', ranked: [], pool: [] });
+    rankings.push({ id: nid, name: '' });
+  }
+  if (rid === activeId) {
+    await loadRanking(rankings[Math.min(idx, rankings.length - 1)].id);
+    showActive();
+  } else {
+    renderTabs();
+  }
+  await saveMeta();
+}
+
+// True when the open ranking has nothing in it, so an import can replace it.
+function activeIsBlank() {
+  return !state.name.trim() && Object.keys(state.images).length === 0;
 }
 
 // ===== Rendering =====
@@ -375,33 +1271,178 @@ function emptyMsg(text) {
 }
 
 function render() {
-  renderRanked();
+  const tier = state.mode === 'tier';
+  document.body.classList.toggle('tier-mode', tier);
+  document.getElementById('modeListBtn').classList.toggle('active', !tier);
+  document.getElementById('modeTierBtn').classList.toggle('active', tier);
+  if (tier) { renderTiers(); syncAutoColorBtn(); } else renderRanked();
   renderPool();
-  updateImageCount();
+  syncSelection();  // also updates the image count
 }
 
 function updateImageCount() {
   const total = Object.keys(state.images).length;
-  const ranked = state.ranked.length;
-  const unranked = state.pool.length;
+  const unranked = currentPool().length;
+  const placed = total - unranked;
+  const hidden = Object.keys(state.images).filter(isHidden).length;
   const el = document.getElementById('imageCount');
   el.textContent = total === 0
     ? 'No images'
-    : `${total} image${total === 1 ? '' : 's'} (${ranked} ranked, ${unranked} unranked)`;
+    : `${total} image${total === 1 ? '' : 's'} (${placed} ${state.mode === 'tier' ? 'tiered' : 'ranked'}, ${unranked} unranked)`
+      + (hidden ? ` · ${hidden} hidden` : '')
+      + (selected.size ? ` · ${selected.size} selected (Esc to clear)` : '');
+}
+
+// Empty-area message, noting when the area only looks empty because its
+// images are in hidden groups.
+function hiddenMsg(list, text) {
+  const n = list.length;
+  return emptyMsg(n ? `${n} image${n === 1 ? ' is' : 's are'} here, all in hidden groups.` : text);
+}
+
+// Tier rows are rebuilt on each render (the old rows and their listeners are
+// discarded with them); the image cards inside are the cached ones.
+// An inline-editable text field bound to tier[key]; Enter finishes editing.
+function makeTierText(className, tier, key, title) {
+  const el = document.createElement('div');
+  el.className = className;
+  // 'plaintext-only' blocks pasted formatting, but older browsers throw on it.
+  try { el.contentEditable = 'plaintext-only'; } catch (e) { el.contentEditable = 'true'; }
+  el.spellcheck = false;
+  el.textContent = tier[key];
+  el.title = title;
+  el.addEventListener('input', () => {
+    tier[key] = el.textContent;
+    saveLayout();
+  });
+  el.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+  });
+  // Normalize away a stray <br> some browsers leave behind, so :empty
+  // (which shows the placeholder) works again after clearing the text.
+  el.addEventListener('blur', () => { if (!el.textContent.trim()) el.textContent = ''; });
+  return el;
+}
+
+function renderTiers() {
+  const board = document.getElementById('tierBoard');
+  board.replaceChildren();
+  pruneBounds();
+  state.tiers.forEach((tier, i) => {
+    const row = document.createElement('div');
+    row.className = 'tier-row';
+
+    // Colored cell holding the tier's name and its optional description.
+    const label = document.createElement('div');
+    label.className = 'tier-label';
+    label.style.background = tier.color;
+    label.style.color = textColorFor(tier.color);
+    label.appendChild(makeTierText('tier-name', tier, 'label', 'Click to rename this tier'));
+    label.appendChild(makeTierText('tier-desc', tier, 'description',
+      'Optional description of what this tier means'));
+    // Dropping a card on the label adds it to the end of this tier (instead of
+    // the browser pasting the card's id into the editable text).
+    label.addEventListener('dragover', (e) => {
+      if (!dragState) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    label.addEventListener('drop', (e) => {
+      if (!dragState) return;
+      e.preventDefault();
+      moveImages(dragState.ids, 'tier:' + tier.id, null);
+    });
+    row.appendChild(label);
+
+    const items = document.createElement('div');
+    items.className = 'rank-images tier-items';
+    for (const imgId of visible(tier.items)) {
+      const card = getCard(imgId);
+      if (!card) continue;
+      card._rankNum.style.display = 'none';
+      setCardBound(card, imgId === tier.upper);
+      setCardGroup(card, imgId);
+      items.appendChild(card);
+    }
+    setupDropZone(items, 'tier:' + tier.id);
+    row.appendChild(items);
+
+    const controls = document.createElement('div');
+    controls.className = 'tier-controls';
+    const ctrl = (text, title, onClick, disabled) => {
+      const b = document.createElement('button');
+      b.textContent = text;
+      b.title = title;
+      b.disabled = !!disabled;
+      b.addEventListener('click', onClick);
+      controls.appendChild(b);
+    };
+    ctrl('▲', 'Move tier up', () => moveTier(i, -1), i === 0);
+    const color = document.createElement('input');
+    color.type = 'color';
+    color.value = tier.color;
+    color.title = 'Tier color';
+    color.addEventListener('input', () => {
+      // A hand-picked color wins: stop auto-coloring so it isn't overwritten.
+      if (state.tierAutoColor) {
+        state.tierAutoColor = false;
+        syncAutoColorBtn();
+      }
+      tier.color = color.value;
+      label.style.background = tier.color;
+      label.style.color = textColorFor(tier.color);
+      saveLayout();
+    });
+    controls.appendChild(color);
+    ctrl('×', 'Delete tier (its images go back to unranked)', () => deleteTier(i));
+    ctrl('▼', 'Move tier down', () => moveTier(i, 1), i === state.tiers.length - 1);
+    row.appendChild(controls);
+
+    board.appendChild(row);
+  });
+}
+
+function addTier() {
+  const i = state.tiers.length;
+  state.tiers.push({ id: newTierId(), label: nextTierLabel(), description: '', color: TIER_COLORS[i % TIER_COLORS.length], items: [] });
+  tiersChanged();
+}
+
+function moveTier(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= state.tiers.length) return;
+  [state.tiers[i], state.tiers[j]] = [state.tiers[j], state.tiers[i]];
+  tiersChanged();
+}
+
+function deleteTier(i) {
+  const [tier] = state.tiers.splice(i, 1);
+  state.tierPool.unshift(...tier.items);
+  tiersChanged();
+}
+
+function syncAutoColorBtn() {
+  const btn = document.getElementById('autoColorBtn');
+  btn.classList.toggle('active', !!state.tierAutoColor);
+  btn.textContent = state.tierAutoColor ? 'Auto colors: on' : 'Auto colors: off';
 }
 
 function renderRanked() {
   const el = document.getElementById('ranked');
   el.replaceChildren();  // detaches cached cards without destroying them
-  if (state.ranked.length === 0) {
-    el.appendChild(emptyMsg('Drag images here to rank them. The number in each corner is its rank.'));
+  // Rank numbers count only the shown images, matching the export.
+  const shown = visible(state.ranked);
+  if (shown.length === 0) {
+    el.appendChild(hiddenMsg(state.ranked, 'Drag images here to rank them. The number in each corner is its rank.'));
     return;
   }
-  state.ranked.forEach((imgId, i) => {
+  shown.forEach((imgId, i) => {
     const card = getCard(imgId);
     if (!card) return;
     card._rankNum.textContent = i + 1;
     card._rankNum.style.display = '';
+    setCardBound(card, false);
+    setCardGroup(card, imgId);
     el.appendChild(card);
   });
 }
@@ -409,14 +1450,18 @@ function renderRanked() {
 function renderPool() {
   const poolEl = document.getElementById('pool');
   poolEl.replaceChildren();
-  if (state.pool.length === 0) {
-    poolEl.appendChild(emptyMsg('Drag images here, or click "+ Add Images" / drop image files anywhere on this page.'));
+  const pool = currentPool();
+  const shown = visible(pool);
+  if (shown.length === 0) {
+    poolEl.appendChild(hiddenMsg(pool, 'Drag images here, or click "+ Add Images" / drop image files anywhere on this page.'));
     return;
   }
-  state.pool.forEach(imgId => {
+  shown.forEach(imgId => {
     const card = getCard(imgId);
     if (!card) return;
     card._rankNum.style.display = 'none';
+    setCardBound(card, false);
+    setCardGroup(card, imgId);
     poolEl.appendChild(card);
   });
 }
@@ -435,6 +1480,13 @@ function makeImageCard(imgId) {
   imgEl.decoding = 'async';
   card.appendChild(imgEl);
 
+  // Group color stripe along the bottom edge; set by the render pass.
+  const stripe = document.createElement('div');
+  stripe.className = 'group-stripe';
+  stripe.style.display = 'none';
+  card.appendChild(stripe);
+  card._groupStripe = stripe;
+
   // Rank badge: always present, shown/hidden + numbered by the render pass.
   const num = document.createElement('div');
   num.className = 'rank-num';
@@ -442,16 +1494,59 @@ function makeImageCard(imgId) {
   card.appendChild(num);
   card._rankNum = num;
 
+  // Tier upper-bound tag + toggle button (only shown inside a tier row).
+  const tag = document.createElement('div');
+  tag.className = 'bound-tag';
+  tag.textContent = '▲ Upper bound';
+  tag.style.display = 'none';
+  card.appendChild(tag);
+  card._boundTag = tag;
+  const boundBtn = document.createElement('button');
+  boundBtn.className = 'bound-btn';
+  boundBtn.textContent = '▲';
+  boundBtn.title = 'Mark as this tier\'s upper bound (moves it to the front; click again to unmark)';
+  boundBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleBound(imgId);
+  });
+  card.appendChild(boundBtn);
+
+  card.addEventListener('click', (e) => {
+    if (e.target.closest('.img-bubble, button')) return;
+    onCardClick(imgId, e);
+  });
+
   card.addEventListener('dragstart', (e) => {
     e.dataTransfer.setData('text/plain', imgId);
-    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.effectAllowed = 'copyMove';  // move within a ranking, copy onto another tab
     card.classList.add('dragging');
     const r = card.getBoundingClientRect();
-    dragState = { imgId, w: r.width, h: r.height, sourceCard: card };
-    // Hide the source card from layout (after the browser captures the drag image)
-    setTimeout(() => { if (dragState && dragState.sourceCard === card) card.style.display = 'none'; }, 0);
+    // Dragging a selected card carries the whole selection along.
+    const ids = selected.has(imgId) && selected.size > 1 ? selectionInOrder() : [imgId];
+    dragState = { imgId, ids, w: r.width, h: r.height, sourceCard: card };
+    // Count badge, present only while the browser snapshots the drag image.
+    let badge = null;
+    if (ids.length > 1) {
+      badge = document.createElement('div');
+      badge.className = 'drag-count';
+      badge.textContent = ids.length;
+      card.appendChild(badge);
+    }
+    // Hide the dragged cards from layout (after the browser captures the drag image)
+    setTimeout(() => {
+      if (badge) badge.remove();
+      if (!dragState || dragState.sourceCard !== card) return;
+      for (const id of ids) {
+        const c = cardCache.get(id);
+        if (c) c.style.display = 'none';
+      }
+    }, 0);
   });
   card.addEventListener('dragend', () => {
+    for (const id of dragState ? dragState.ids : [imgId]) {
+      const c = cardCache.get(id);
+      if (c) c.style.display = '';
+    }
     card.style.display = '';
     card.classList.remove('dragging');
     removePlaceholder();
@@ -605,36 +1700,164 @@ function setupDropZone(el, target) {
     if (!imgId || !state.images[imgId]) return;
     e.preventDefault();
     // Compute the index straight from the cursor position so it never depends
-    // on the placeholder still being present in the DOM.
-    const { index } = computeInsertIndex(el, e.clientX, e.clientY);
+    // on the placeholder still being present in the DOM. All dragged cards are
+    // hidden. Cards of hidden groups aren't on screen either, so land before
+    // the card under the cursor by id rather than by position.
+    const { index, cards } = computeInsertIndex(el, e.clientX, e.clientY);
     removePlaceholder();
-    moveImage(imgId, target, index);
+    const ids = dragState && dragState.imgId === imgId ? dragState.ids : [imgId];
+    moveImages(ids, target, cards[index] ? cards[index].dataset.imageId : null);
   });
 }
 
-// ===== Operations =====
-function listFor(target) {
-  return target === 'ranked' ? state.ranked : state.pool;
+// ===== Selection =====
+// Click a card to select it (click again to deselect); shift-click selects
+// the run between it and the last clicked card in the same row. Dragging any
+// selected card moves the whole selection.
+const selected = new Set();
+let selectAnchor = null;
+
+function syncSelection() {
+  for (const [id, card] of cardCache) card.classList.toggle('selected', selected.has(id));
+  updateImageCount();
+  renderGroupBar();  // its buttons depend on the selection
 }
 
-function removeFromAny(imgId) {
-  for (const list of [state.ranked, state.pool]) {
+function clearSelection() {
+  selectAnchor = null;
+  if (!selected.size) return;
+  selected.clear();
+  syncSelection();
+}
+
+function onCardClick(imgId, e) {
+  if (e.shiftKey && selectAnchor && selectAnchor !== imgId) {
+    const found = modeLists().find(l => l.includes(imgId));
+    const list = found && visible(found);
+    if (list && list.includes(selectAnchor)) {
+      const [a, b] = [list.indexOf(selectAnchor), list.indexOf(imgId)].sort((x, y) => x - y);
+      for (const id of list.slice(a, b + 1)) selected.add(id);
+      syncSelection();
+      return;
+    }
+  }
+  if (selected.has(imgId)) selected.delete(imgId); else selected.add(imgId);
+  selectAnchor = imgId;
+  syncSelection();
+}
+
+// Selected ids in on-screen order (tier by tier, or ranked then unranked).
+function selectionInOrder() {
+  return modeLists().flat().filter(id => selected.has(id));
+}
+
+// Box selection: press on empty space in the page and drag a rectangle; every
+// card it touches is selected. With Shift/⌘/Ctrl held it adds to the current
+// selection. A plain click on empty space (no drag) clears the selection.
+// The box is tracked in document coordinates so scrolling mid-drag works.
+const MARQUEE_SKIP = '.img-card, button, input, label, [contenteditable], .tier-label, .tier-controls, .group-bar';
+document.querySelector('main').addEventListener('pointerdown', (e) => {
+  if (e.button !== 0 || e.pointerType === 'touch' || e.target.closest(MARQUEE_SKIP)) return;
+  e.preventDefault();  // no text selection while dragging the box
+  if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
+  const additive = e.shiftKey || e.metaKey || e.ctrlKey;
+  const base = additive ? new Set(selected) : new Set();
+  const start = { x: e.clientX + scrollX, y: e.clientY + scrollY };
+  let last = { x: e.clientX, y: e.clientY };
+  let box = null;
+
+  const update = () => {
+    const cur = { x: last.x + scrollX, y: last.y + scrollY };
+    const left = Math.min(start.x, cur.x), top = Math.min(start.y, cur.y);
+    const right = Math.max(start.x, cur.x), bottom = Math.max(start.y, cur.y);
+    if (!box) {
+      if (right - left < 4 && bottom - top < 4) return;  // still just a click
+      box = document.createElement('div');
+      box.className = 'marquee';
+      document.body.appendChild(box);
+      document.body.classList.add('marquee-active');
+    }
+    Object.assign(box.style, {
+      left: left + 'px', top: top + 'px',
+      width: (right - left) + 'px', height: (bottom - top) + 'px',
+    });
+    selected.clear();
+    for (const id of base) selected.add(id);
+    for (const id of modeLists().flat()) {
+      const card = cardCache.get(id);
+      if (!card || !card.isConnected) continue;
+      const r = card.getBoundingClientRect();
+      if (r.right + scrollX > left && r.left + scrollX < right &&
+          r.bottom + scrollY > top && r.top + scrollY < bottom) selected.add(id);
+    }
+    syncSelection();
+  };
+  const onMove = (ev) => {
+    last = { x: ev.clientX, y: ev.clientY };
+    // Nudge the page when the box reaches the top/bottom edge of the window.
+    if (ev.clientY < 40) scrollBy(0, -20);
+    else if (ev.clientY > innerHeight - 40) scrollBy(0, 20);
+    update();
+  };
+  const onUp = () => {
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('scroll', update);
+    document.body.classList.remove('marquee-active');
+    if (box) box.remove();
+    else if (!additive) clearSelection();
+  };
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('scroll', update);
+});
+
+// ===== Operations =====
+function currentPool() {
+  return state.mode === 'tier' ? state.tierPool : state.pool;
+}
+
+// The lists making up the current mode's arrangement.
+function modeLists() {
+  return state.mode === 'tier'
+    ? [...state.tiers.map(t => t.items), state.tierPool]
+    : [state.ranked, state.pool];
+}
+
+// target: 'ranked', 'pool' (the current mode's pool) or 'tier:<tierId>'.
+function listFor(target) {
+  if (target === 'ranked') return state.ranked;
+  if (target === 'pool') return currentPool();
+  const tier = (state.tiers || []).find(t => 'tier:' + t.id === target);
+  return tier ? tier.items : null;
+}
+
+function removeFrom(lists, imgId) {
+  for (const list of lists) {
     const i = list.indexOf(imgId);
     if (i !== -1) { list.splice(i, 1); return; }
   }
 }
 
-function moveImage(imgId, target, insertIndex) {
-  removeFromAny(imgId);
+// Move one or more images (kept in the given order) to target, just before
+// the image beforeId (null = at the end).
+function moveImages(ids, target, beforeId) {
   const list = listFor(target);
-  const idx = Math.min(Math.max(insertIndex, 0), list.length);
-  list.splice(idx, 0, imgId);
+  if (!list) return;
+  const lists = modeLists();
+  for (const id of ids) removeFrom(lists, id);
+  const idx = beforeId ? list.indexOf(beforeId) : -1;
+  list.splice(idx === -1 ? list.length : idx, 0, ...ids);
+  if (ids.length > 1) clearSelection();  // a group move is done; start fresh
   render();
   saveLayout();  // only the ordering changed
 }
 
 function removeImage(imgId) {
-  removeFromAny(imgId);
+  selected.delete(imgId);
+  delete state.groupOf[imgId];
+  removeFrom([state.ranked, state.pool], imgId);
+  if (state.tiers) removeFrom([...state.tiers.map(t => t.items), state.tierPool], imgId);
   const img = state.images[imgId];
   if (img && img.url) URL.revokeObjectURL(img.url);
   delete state.images[imgId];
@@ -653,11 +1876,21 @@ async function addFiles(files) {
     const blob = file;
     state.images[id] = { blob, name: file.name, url: URL.createObjectURL(blob) };
     state.pool.push(id);
+    if (state.tiers) state.tierPool.push(id);
     newIds.push(id);
   }
   render();
-  for (const id of newIds) await saveImage(id);
   saveLayout();
+  // Capture keys + records now so switching tabs mid-save can't misfile them.
+  const pending = newIds.map(id => [imgKey(id), imageRecord(id)]);
+  setSaveStatus('Saving...');
+  try {
+    for (const [key, rec] of pending) await dbPut(key, rec);
+    setSaveStatus('Saved');
+    setTimeout(() => setSaveStatus(''), 1200);
+  } catch (e) {
+    setSaveStatus('Save failed: ' + e.message);
+  }
   showToast(`Added ${imgs.length} image${imgs.length === 1 ? '' : 's'}`);
 }
 
@@ -800,104 +2033,228 @@ function drawTitle(ctx, lines, totalW, top, fontPx) {
   ctx.restore();
 }
 
-async function exportJPG() {
-  if (state.ranked.length === 0) {
-    showToast('Nothing ranked to export');
-    return;
-  }
-  const PAD = 8;
-  const BG = '#1a1a1a';
+// Number of top-ranked images to export; 0 means all.
+function exportLimit() {
+  const n = parseInt(document.getElementById('exportLimit').value, 10);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
 
-  // Measure each image one at a time (decode then immediately release) so we
-  // never hold 80 full-resolution bitmaps in memory at once. The actual pixels
-  // are decoded again, streamed, during the draw pass below.
+// Requested export width/height in pixels; 0 means unconstrained.
+function exportDim(inputId) {
+  const n = parseInt(document.getElementById(inputId).value, 10);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+// Resample a finished canvas to fit within wantW × wantH (either may be 0 for
+// "no limit"), keeping its aspect ratio. Large downscales go in halving steps
+// so the result stays sharp instead of aliased.
+function resizeCanvas(src, wantW, wantH, maxSide, maxArea) {
+  const k = Math.min(wantW ? wantW / src.width : Infinity,
+                     wantH ? wantH / src.height : Infinity);
+  let targetW = Math.max(1, Math.round(src.width * k));
+  let targetH = Math.max(1, Math.round(src.height * k));
+  // Clamp to the browser canvas limits if a huge size was requested.
+  const fit = Math.min(maxSide / targetW, maxSide / targetH,
+                       Math.sqrt(maxArea / (targetW * targetH)), 1);
+  if (fit < 1) {
+    targetW = Math.max(1, Math.floor(targetW * fit));
+    targetH = Math.max(1, Math.floor(targetH * fit));
+  }
+  if (targetW === src.width && targetH === src.height) return src;
+  let cur = src;
+  while (cur.width / 2 >= targetW) {
+    const half = document.createElement('canvas');
+    half.width = Math.max(targetW, Math.round(cur.width / 2));
+    half.height = Math.max(targetH, Math.round(cur.height / 2));
+    const hctx = half.getContext('2d');
+    hctx.imageSmoothingEnabled = true;
+    hctx.imageSmoothingQuality = 'high';
+    hctx.drawImage(cur, 0, 0, half.width, half.height);
+    if (cur !== src) cur.width = cur.height = 0;  // free the intermediate
+    cur = half;
+  }
+  if (cur.width === targetW && cur.height === targetH) return cur;
+  const out = document.createElement('canvas');
+  out.width = targetW;
+  out.height = targetH;
+  const octx = out.getContext('2d');
+  octx.imageSmoothingEnabled = true;
+  octx.imageSmoothingQuality = 'high';
+  octx.drawImage(cur, 0, 0, targetW, targetH);
+  if (cur !== src) cur.width = cur.height = 0;
+  return out;
+}
+
+// Safari caps canvas at ~16384px per side and ~16384² area; stay well under.
+const EXPORT_MAX_SIDE = 14000;
+const EXPORT_MAX_AREA = 200_000_000;
+const EXPORT_PAD = 8;
+const EXPORT_BG = '#1a1a1a';
+
+// Measure each image one at a time (decode then immediately release) so we
+// never hold 80 full-resolution bitmaps in memory at once. The actual pixels
+// are decoded again, streamed, during the draw pass.
+async function measureDims(ids) {
   const dims = {};
-  for (const id of state.ranked) {
+  for (const id of ids) {
     const bmp = await createImageBitmap(state.images[id].blob);
     dims[id] = { w: bmp.width, h: bmp.height };
     bmp.close();
   }
+  return dims;
+}
 
+// Scaled width of each image at row height targetH.
+function scaledWidths(ids, dims, targetH) {
+  const sW = {};
+  for (const id of ids) sW[id] = Math.round(dims[id].w * (targetH / dims[id].h));
+  return sW;
+}
+
+// Wrap images onto multiple lines when they exceed maxLineW. Each line's
+// width includes PAD before every image and after the last one.
+function packLines(ids, sW, maxLineW) {
+  const PAD = EXPORT_PAD;
+  const lines = [];
+  let cur = [];
+  let curW = PAD;
+  for (const id of ids) {
+    const iw = sW[id];
+    if (cur.length > 0 && curW + iw + PAD > maxLineW) {
+      lines.push({ images: cur, width: curW });
+      cur = []; curW = PAD;
+    }
+    cur.push(id);
+    curW += iw + PAD;
+  }
+  if (cur.length > 0) lines.push({ images: cur, width: curW });
+  return lines;
+}
+
+// Title band: sized off the row height and wrapped to the image width, so a
+// long title never widens the canvas past the images themselves.
+function titleLayout(title, targetH, totalW, measureCtx) {
+  if (!title) return { titleFontPx: 0, titleBandH: 0, titleLines: [] };
+  const PAD = EXPORT_PAD;
+  let titleFontPx = Math.max(20, Math.round(targetH * 0.16));
+  const maxTitleW = Math.max(200, totalW - PAD * 4);
+  measureCtx.font = titleFont(titleFontPx);
+  // Only an unbreakable word forces a smaller font; the rest just wraps.
+  const longestWord = Math.max(...title.split(/\s+/).filter(Boolean)
+    .map(w => measureCtx.measureText(w).width));
+  if (longestWord > maxTitleW) {
+    titleFontPx = Math.max(12, Math.floor(titleFontPx * maxTitleW / longestWord));
+    measureCtx.font = titleFont(titleFontPx);
+  }
+  const titleLines = wrapText(measureCtx, title, maxTitleW);
+  const titleBandH = Math.round(titleLines.length * titleFontPx * 1.35) + PAD;
+  return { titleFontPx, titleBandH, titleLines };
+}
+
+// Lay out at the tallest source height (highest quality), then shrink the row
+// height if the result would exceed the browser's canvas limits.
+function fitLayout(layoutFor, targetH) {
+  let L = layoutFor(targetH);
+  const sideScale = Math.min(EXPORT_MAX_SIDE / L.totalW, EXPORT_MAX_SIDE / L.totalH, 1);
+  const areaScale = Math.sqrt(EXPORT_MAX_AREA / (L.totalW * L.totalH));
+  const scale = Math.min(sideScale, areaScale, 1);
+  if (scale < 1) L = layoutFor(Math.max(40, Math.floor(targetH * scale)));
+  return L;
+}
+
+function newExportCanvas(w, h) {
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.fillStyle = EXPORT_BG;
+  ctx.fillRect(0, 0, w, h);
+  return { canvas, ctx };
+}
+
+// Decode one image, draw it (plus its caption), then free it immediately —
+// peak memory is one source bitmap plus the canvas, instead of all 80 at once
+// (which caused later drawImage calls to silently fail / render blank).
+async function drawExportImage(ctx, id, x, y, w, h) {
+  const bmp = await createImageBitmap(state.images[id].blob);
+  ctx.drawImage(bmp, x, y, w, h);
+  bmp.close();
+  const ann = state.images[id].annotation;
+  if (ann && ann.text) drawBubble(ctx, ann, x, y, w, h);
+}
+
+// Apply the requested w/h, encode as JPEG and download it.
+function downloadCanvas(canvas, filenameExtra, count) {
+  const wantW = exportDim('exportWidth');
+  const wantH = exportDim('exportHeight');
+  if (wantW || wantH) {
+    const resized = resizeCanvas(canvas, wantW, wantH, EXPORT_MAX_SIDE, EXPORT_MAX_AREA);
+    if (resized !== canvas) {
+      canvas.width = canvas.height = 0;  // release the full-size render
+      canvas = resized;
+    }
+  }
+  const outW = canvas.width, outH = canvas.height;
+
+  // Highest quality JPEG
+  canvas.toBlob((blob) => {
+    if (!blob) {
+      console.error('toBlob returned null. Canvas size:', outW, 'x', outH);
+      showToast(`Export failed (canvas ${outW}×${outH} too large for browser)`);
+      return;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    a.href = url;
+    a.download = `${nameSlug('ranking')}${filenameExtra}-${ts}.jpg`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    showToast(`Exported ${count} image${count === 1 ? '' : 's'} (${outW}×${outH})`);
+  }, 'image/jpeg', 1.0);
+}
+
+function exportJPG() {
+  return state.mode === 'tier' ? exportTierJPG() : exportListJPG();
+}
+
+// Exports show exactly what's on screen: images in hidden groups are left out.
+async function exportListJPG() {
+  const shown = visible(state.ranked);
+  if (shown.length === 0) {
+    showToast(state.ranked.length ? 'Every ranked image is in a hidden group' : 'Nothing ranked to export');
+    return;
+  }
+  const limit = exportLimit();
+  const ranked = limit ? shown.slice(0, limit) : shown;
+  const PAD = EXPORT_PAD;
+
+  const dims = await measureDims(ranked);
   // Uniform height = tallest source image (preserves highest quality);
   // each image scaled proportionally to that height.
-  let TARGET_H = 500;
-  for (const id of state.ranked) {
-    if (dims[id].h > TARGET_H) TARGET_H = dims[id].h;
-  }
-
-  // Safari caps canvas at ~16384px per side and ~16384² area; stay well under.
-  const MAX_SIDE = 14000;
-  const MAX_AREA = 200_000_000;
+  let maxH = 500;
+  for (const id of ranked) maxH = Math.max(maxH, dims[id].h);
 
   const title = (state.name || '').trim();
   // Offscreen context used only to measure the title text while laying out.
   const measureCtx = document.createElement('canvas').getContext('2d');
 
-  // Wrap ranked images onto multiple lines when they exceed maxLineW.
   function layoutFor(targetH) {
-    const maxLineW = Math.max(1800, targetH * 6);
-    const sW = {};
-    for (const id of state.ranked) {
-      const im = dims[id];
-      sW[id] = Math.round(im.w * (targetH / im.h));
-    }
-    const lines = [];
-    let cur = [];
-    let curW = PAD;
-    for (const id of state.ranked) {
-      const iw = sW[id];
-      if (cur.length > 0 && curW + iw + PAD > maxLineW) {
-        lines.push({ images: cur, width: curW });
-        cur = []; curW = PAD;
-      }
-      cur.push(id);
-      curW += iw + PAD;
-    }
-    if (cur.length > 0) lines.push({ images: cur, width: curW });
-    let totalWv = Math.max(...lines.map(l => l.width));
-
-    // Title band: sized off the row height and wrapped to the image width, so
-    // a long title never widens the canvas past the images themselves.
-    let titleFontPx = 0, titleBandH = 0, titleLines = [];
-    if (title) {
-      titleFontPx = Math.max(20, Math.round(targetH * 0.16));
-      const maxTitleW = Math.max(200, totalWv - PAD * 4);
-      measureCtx.font = titleFont(titleFontPx);
-      // Only an unbreakable word forces a smaller font; the rest just wraps.
-      const longestWord = Math.max(...title.split(/\s+/).filter(Boolean)
-        .map(w => measureCtx.measureText(w).width));
-      if (longestWord > maxTitleW) {
-        titleFontPx = Math.max(12, Math.floor(titleFontPx * maxTitleW / longestWord));
-        measureCtx.font = titleFont(titleFontPx);
-      }
-      titleLines = wrapText(measureCtx, title, maxTitleW);
-      titleBandH = Math.round(titleLines.length * titleFontPx * 1.35) + PAD;
-    }
-
-    const totalHv = titleBandH + lines.length * targetH + (lines.length + 1) * PAD;
-    return { targetH, sW, lines, totalW: totalWv, totalH: totalHv, titleFontPx, titleBandH, titleLines };
+    const sW = scaledWidths(ranked, dims, targetH);
+    const lines = packLines(ranked, sW, Math.max(1800, targetH * 6));
+    const totalW = Math.max(...lines.map(l => l.width));
+    const T = titleLayout(title, targetH, totalW, measureCtx);
+    const totalH = T.titleBandH + lines.length * targetH + (lines.length + 1) * PAD;
+    return { targetH, sW, lines, totalW, totalH, ...T };
   }
 
-  let L = layoutFor(TARGET_H);
-  const sideScale = Math.min(MAX_SIDE / L.totalW, MAX_SIDE / L.totalH, 1);
-  const areaScale = Math.sqrt(MAX_AREA / (L.totalW * L.totalH));
-  const scale = Math.min(sideScale, areaScale, 1);
-  if (scale < 1) {
-    TARGET_H = Math.max(40, Math.floor(TARGET_H * scale));
-    L = layoutFor(TARGET_H);
-  }
-  const { sW: scaledW, lines, totalW, totalH, titleFontPx, titleBandH, titleLines } = L;
-
-  const canvas = document.createElement('canvas');
-  canvas.width = totalW;
-  canvas.height = totalH;
-  const ctx = canvas.getContext('2d');
-  ctx.imageSmoothingEnabled = true;
-  ctx.imageSmoothingQuality = 'high';
-
-  ctx.fillStyle = BG;
-  ctx.fillRect(0, 0, totalW, totalH);
-
+  const { targetH, sW, lines, totalW, totalH, titleFontPx, titleBandH, titleLines } =
+    fitLayout(layoutFor, maxH);
+  const { canvas, ctx } = newExportCanvas(totalW, totalH);
   if (title) drawTitle(ctx, titleLines, totalW, PAD, titleFontPx);
 
   let rank = 1;
@@ -905,40 +2262,126 @@ async function exportJPG() {
   for (const line of lines) {
     let x = PAD;
     for (const id of line.images) {
-      const w = scaledW[id];
-      // Decode this image, draw it, then free it immediately — peak memory is
-      // one source bitmap plus the canvas, instead of all 80 at once (which
-      // caused later drawImage calls to silently fail / render blank).
-      const bmp = await createImageBitmap(state.images[id].blob);
-      ctx.drawImage(bmp, x, ly, w, TARGET_H);
-      bmp.close();
-      const ann = state.images[id].annotation;
-      if (ann && ann.text) drawBubble(ctx, ann, x, ly, w, TARGET_H);
-      drawRankNum(ctx, rank, x, ly, TARGET_H);
+      const w = sW[id];
+      await drawExportImage(ctx, id, x, ly, w, targetH);
+      drawRankNum(ctx, rank, x, ly, targetH);
       x += w + PAD;
       rank++;
     }
-    ly += TARGET_H + PAD;
+    ly += targetH + PAD;
   }
 
-  // Highest quality JPEG
-  canvas.toBlob((blob) => {
-    if (!blob) {
-      console.error('toBlob returned null. Canvas size:', totalW, 'x', totalH);
-      showToast(`Export failed (canvas ${totalW}×${totalH} too large for browser)`);
-      return;
+  const topPart = ranked.length < shown.length ? `-top${ranked.length}` : '';
+  downloadCanvas(canvas, topPart, ranked.length);
+}
+
+// Tier label text: as large as fits inside the colored cell, wrapped by word.
+function fitTierLabel(ctx, text, maxW, maxH, startPx, font = titleFont) {
+  let px = startPx;
+  for (;;) {
+    ctx.font = font(px);
+    const lines = text ? wrapText(ctx, text, maxW) : [];
+    const widest = Math.max(0, ...lines.map(l => ctx.measureText(l).width));
+    if (px <= 10 || (widest <= maxW && lines.length * px * 1.2 <= maxH)) return { px, lines };
+    px = Math.max(10, Math.floor(px * 0.9));
+  }
+}
+
+const descFont = (px) => `500 ${px}px -apple-system, BlinkMacSystemFont, Arial, sans-serif`;
+
+// Draw a tier's name (and description, if any) centered in its colored cell.
+function drawTierLabel(ctx, tier, x, y, w, h, targetH) {
+  const pad = Math.round(Math.min(w, h) * 0.08);
+  const innerW = w - pad * 2, innerH = h - pad * 2;
+  const name = tier.label.trim();
+  const desc = (tier.description || '').trim();
+  const gapY = desc && name ? Math.round(targetH * 0.04) : 0;
+  // The name keeps at least half the height; the description gets the rest.
+  const N = fitTierLabel(ctx, name, innerW, desc ? innerH * 0.5 : innerH, Math.round(targetH * 0.3));
+  const nameH = N.lines.length * N.px * 1.2;
+  const D = fitTierLabel(ctx, desc, innerW, innerH - nameH - gapY,
+                         Math.max(10, Math.round(targetH * 0.075)), descFont);
+  const descH = D.lines.length * D.px * 1.2;
+  ctx.save();
+  ctx.fillStyle = textColorFor(tier.color);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  let cy = y + (h - (nameH + gapY + descH)) / 2;
+  ctx.font = titleFont(N.px);
+  for (const l of N.lines) { ctx.fillText(l, x + w / 2, cy + N.px * 0.6); cy += N.px * 1.2; }
+  cy += gapY;
+  ctx.font = descFont(D.px);
+  ctx.globalAlpha = 0.85;
+  for (const l of D.lines) { ctx.fillText(l, x + w / 2, cy + D.px * 0.6); cy += D.px * 1.2; }
+  ctx.restore();
+}
+
+async function exportTierJPG() {
+  const tiers = state.tiers || [];
+  const shownItems = (t) => visible(t.items).filter(id => state.images[id]);
+  const ids = tiers.flatMap(shownItems);
+  if (ids.length === 0) {
+    showToast(tiers.some(t => t.items.length) ? 'Every tiered image is in a hidden group' : 'Nothing in any tier to export');
+    return;
+  }
+  const PAD = EXPORT_PAD;
+
+  const dims = await measureDims(ids);
+  let maxH = 300;
+  for (const id of ids) maxH = Math.max(maxH, dims[id].h);
+
+  const title = (state.name || '').trim();
+  const measureCtx = document.createElement('canvas').getContext('2d');
+
+  function layoutFor(targetH) {
+    const sW = scaledWidths(ids, dims, targetH);
+    // Widen the label column when there are descriptions so they stay readable.
+    const hasDesc = tiers.some(t => (t.description || '').trim());
+    const labelW = hasDesc ? Math.round(targetH * 1.5) : targetH;
+    const gap = Math.max(2, Math.round(PAD / 2));  // dark line between tiers
+    const rows = tiers.map(t => {
+      const items = shownItems(t);
+      const lines = items.length
+        ? packLines(items, sW, Math.max(1800, targetH * 8))
+        : [{ images: [], width: PAD }];
+      return { tier: t, lines, h: lines.length * targetH + (lines.length + 1) * PAD };
+    });
+    const areaW = Math.max(targetH * 4, ...rows.flatMap(r => r.lines.map(l => l.width)));
+    const totalW = PAD + labelW + areaW + PAD;
+    const T = titleLayout(title, targetH, totalW, measureCtx);
+    const totalH = T.titleBandH + PAD + rows.reduce((s, r) => s + r.h, 0)
+      + gap * (rows.length - 1) + PAD;
+    return { targetH, sW, labelW, gap, rows, areaW, totalW, totalH, ...T };
+  }
+
+  const { targetH, sW, labelW, gap, rows, areaW, totalW, totalH, titleFontPx, titleBandH, titleLines } =
+    fitLayout(layoutFor, maxH);
+  const { canvas, ctx } = newExportCanvas(totalW, totalH);
+  if (title) drawTitle(ctx, titleLines, totalW, PAD, titleFontPx);
+
+  let ty = titleBandH + PAD;
+  for (const row of rows) {
+    // Colored label cell + darker image area.
+    ctx.fillStyle = row.tier.color;
+    ctx.fillRect(PAD, ty, labelW, row.h);
+    ctx.fillStyle = '#2c2c2c';
+    ctx.fillRect(PAD + labelW, ty, areaW, row.h);
+
+    drawTierLabel(ctx, row.tier, PAD, ty, labelW, row.h, targetH);
+
+    let ly = ty + PAD;
+    for (const line of row.lines) {
+      let x = PAD + labelW + PAD;
+      for (const id of line.images) {
+        await drawExportImage(ctx, id, x, ly, sW[id], targetH);
+        x += sW[id] + PAD;
+      }
+      ly += targetH + PAD;
     }
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    a.href = url;
-    a.download = `${nameSlug('ranking')}-${ts}.jpg`;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1000);
-    showToast(`Exported (${totalW}×${totalH})`);
-  }, 'image/jpeg', 1.0);
+    ty += row.h + gap;
+  }
+
+  downloadCanvas(canvas, '-tiers', ids.length);
 }
 
 // ===== Backup / restore =====
@@ -958,11 +2401,19 @@ async function dataUrlToBlob(dataUrl) {
 
 async function downloadBackup() {
   showToast('Building backup...');
+  // v2 adds mode/tiers/tierPool (and later groups/groupOf); v1 backups
+  // (without them) still import as list mode.
   const out = {
-    version: 1,
+    version: 2,
+    groups: state.groups,
+    groupOf: state.groupOf,
     name: state.name || '',
+    mode: state.mode,
     ranked: state.ranked,
     pool: state.pool,
+    tiers: state.tiers,
+    tierPool: state.tierPool,
+    tierAutoColor: state.tierAutoColor,
     images: {},
   };
   for (const id in state.images) {
@@ -987,47 +2438,69 @@ async function downloadBackup() {
   showToast('Backup saved');
 }
 
-async function restoreBackup(file) {
-  let parsed;
-  try {
-    parsed = JSON.parse(await file.text());
-  } catch (e) {
-    alert('Not a valid backup file: ' + e.message);
-    return;
+// Load one or more backup files, each as a new ranking (nothing is replaced).
+async function importBackups(files) {
+  const jsons = [...files];
+  if (jsons.length === 0) return;
+  await flushLayout();
+  const replaceBlank = activeIsBlank() ? activeId : null;
+  const failed = [];
+  let lastId = null, count = 0;
+  for (const file of jsons) {
+    let parsed;
+    try {
+      parsed = JSON.parse(await file.text());
+    } catch (e) {
+      failed.push(file.name);
+      continue;
+    }
+    if (!parsed || !Array.isArray(parsed.ranked) || !Array.isArray(parsed.pool) || typeof parsed.images !== 'object') {
+      failed.push(file.name);
+      continue;
+    }
+    setSaveStatus(`Importing ${file.name}...`);
+    const rid = newRankingId();
+    try {
+      for (const id in parsed.images) {
+        const rec = parsed.images[id];
+        const blob = await dataUrlToBlob(rec.dataUrl);
+        await dbPut(imgKey(id, rid), { blob, name: rec.name, annotation: rec.annotation || null });
+      }
+      const name = parsed.name || '';
+      const tiers = sanitizeTiers(parsed.tiers);
+      await dbPut(layoutKey(rid), {
+        name,
+        mode: parsed.mode === 'tier' ? 'tier' : 'list',
+        ranked: parsed.ranked,
+        pool: parsed.pool,
+        tiers,
+        tierPool: tiers && Array.isArray(parsed.tierPool) ? parsed.tierPool.map(String) : [],
+        tierAutoColor: parsed.tierAutoColor === true,
+        groups: sanitizeGroups(parsed.groups),
+        groupOf: sanitizeGroupOf(parsed.groupOf),
+      });
+      rankings.push({ id: rid, name });
+      lastId = rid;
+      count++;
+    } catch (e) {
+      console.error('Import failed:', file.name, e);
+      await dbDelete(prefixRange(rankingPrefix(rid))).catch(() => {});
+      failed.push(file.name);
+    }
   }
-  if (!parsed || !Array.isArray(parsed.ranked) || !Array.isArray(parsed.pool) || typeof parsed.images !== 'object') {
-    alert('Backup file is missing expected fields.');
-    return;
+  setSaveStatus('');
+  if (lastId) {
+    // Drop the empty ranking we were sitting on so imports don't leave clutter.
+    if (replaceBlank) {
+      rankings = rankings.filter(r => r.id !== replaceBlank);
+      await dbDelete(prefixRange(rankingPrefix(replaceBlank))).catch(() => {});
+    }
+    await loadRanking(lastId);
+    showActive();
+    await saveMeta();
   }
-  if (!confirm('Replace your current ranking with this backup? Current state will be lost.')) return;
-
-  // Release current blob URLs
-  for (const id in state.images) {
-    if (state.images[id].url) URL.revokeObjectURL(state.images[id].url);
-  }
-  // Rebuild state with blobs from data URLs
-  const newImages = {};
-  for (const id in parsed.images) {
-    const rec = parsed.images[id];
-    const blob = await dataUrlToBlob(rec.dataUrl);
-    newImages[id] = { blob, name: rec.name, url: URL.createObjectURL(blob), annotation: rec.annotation || null };
-  }
-  cardCache.clear();
-  state = { name: parsed.name || '', ranked: parsed.ranked, pool: parsed.pool, images: newImages };
-  computeNextId();
-
-  syncNameInput();
-  render();
-  try {
-    await dbClear();
-    await persistAllImages();
-    await dbPut(LAYOUT_KEY, { name: state.name, ranked: state.ranked, pool: state.pool });
-    setSaveStatus('Saved');
-    setTimeout(() => setSaveStatus(''), 1200);
-  } catch (e) {
-    setSaveStatus('Save failed: ' + e.message);
-  }
-  showToast('Restored');
+  if (failed.length) alert(`Could not import:\n${failed.join('\n')}`);
+  if (count) showToast(`Imported ${count} ranking${count === 1 ? '' : 's'}`);
 }
 
 // ===== UI wiring =====
@@ -1045,6 +2518,8 @@ function syncNameInput() {
 
 document.getElementById('listName').addEventListener('input', (e) => {
   state.name = e.target.value;
+  rankings.find(r => r.id === activeId).name = state.name;
+  renderTabs();
   saveLayout();  // only the small layout record changes
 });
 
@@ -1074,30 +2549,79 @@ document.getElementById('captionsBtn').addEventListener('click', async () => {
   for (const id of changed) await saveImage(id);
   showToast(`Captioned ${changed.length} image${changed.length === 1 ? '' : 's'}`);
 });
+document.getElementById('clearCaptionsBtn').addEventListener('click', async () => {
+  const changed = Object.keys(state.images).filter(id => state.images[id].annotation);
+  if (changed.length === 0) {
+    showToast('No captions to remove');
+    return;
+  }
+  if (!confirm(`Remove captions from ${changed.length} image${changed.length === 1 ? '' : 's'}?`)) return;
+  for (const id of changed) {
+    state.images[id].annotation = null;
+    cardCache.delete(id);  // rebuild so the caption bubble disappears
+  }
+  render();
+  for (const id of changed) await saveImage(id);
+  showToast(`Removed ${changed.length} caption${changed.length === 1 ? '' : 's'}`);
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') clearSelection();
+});
+document.getElementById('modeListBtn').addEventListener('click', () => setMode('list'));
+document.getElementById('modeTierBtn').addEventListener('click', () => setMode('tier'));
+document.getElementById('addTierBtn').addEventListener('click', addTier);
+document.getElementById('autoColorBtn').addEventListener('click', toggleAutoColor);
 document.getElementById('backupBtn').addEventListener('click', downloadBackup);
 document.getElementById('restoreBtn').addEventListener('click', () => {
   document.getElementById('restoreInput').click();
 });
 document.getElementById('restoreInput').addEventListener('change', (e) => {
-  const f = e.target.files[0];
-  if (f) restoreBackup(f);
+  importBackups(e.target.files);
   e.target.value = '';
 });
 document.getElementById('exportBtn').addEventListener('click', exportJPG);
-document.getElementById('resetBtn').addEventListener('click', async () => {
-  if (!confirm('Delete all images and the ranking? This cannot be undone.')) return;
-  for (const id in state.images) {
-    if (state.images[id].url) URL.revokeObjectURL(state.images[id].url);
+for (const inputId of ['exportLimit', 'exportWidth', 'exportHeight']) {
+  document.getElementById(inputId).addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') exportJPG();
+  });
+}
+// Sort the unranked pool by filename (natural order, so "img2" < "img10").
+// If it's already A→Z, sort Z→A instead.
+document.getElementById('sortPoolBtn').addEventListener('click', () => {
+  const pool = currentPool();
+  if (pool.length < 2) return;
+  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+  const nameOf = id => (state.images[id] && state.images[id].name) || '';
+  const asc = [...pool].sort((a, b) => collator.compare(nameOf(a), nameOf(b)));
+  const alreadyAsc = asc.every((id, i) => id === pool[i]);
+  pool.splice(0, pool.length, ...(alreadyAsc ? asc.reverse() : asc));
+  renderPool();
+  saveLayout();
+  showToast(alreadyAsc ? 'Unranked sorted Z–A' : 'Unranked sorted A–Z');
+});
+
+// Reset only the mode on screen: every image goes back to that mode's unranked
+// pool (placed ones first, in their current order). Images are shared by both
+// modes, so none are deleted and the other mode's arrangement is untouched.
+document.getElementById('resetBtn').addEventListener('click', () => {
+  const tier = state.mode === 'tier';
+  const placed = tier ? state.tiers.flatMap(t => t.items) : state.ranked;
+  if (placed.length === 0) {
+    showToast(tier ? 'Nothing in any tier to reset' : 'Nothing ranked to reset');
+    return;
   }
-  cardCache.clear();
-  freshState();
-  syncNameInput();
+  const what = tier ? 'tier list' : 'list ranking';
+  if (!confirm(`Reset the ${what}? All ${placed.length} placed image${placed.length === 1 ? '' : 's'} go back to Unranked. The other mode is not affected.`)) return;
+  if (tier) {
+    state.tierPool = [...placed, ...state.tierPool];
+    for (const t of state.tiers) t.items = [];
+  } else {
+    state.pool = [...placed, ...state.pool];
+    state.ranked = [];
+  }
   render();
-  try {
-    await dbClear();
-  } catch (e) {
-    setSaveStatus('Save failed: ' + e.message);
-  }
+  saveLayout();
+  showToast(tier ? 'Tier list reset' : 'List ranking reset');
 });
 
 // Global drag-drop of files onto the page
@@ -1118,9 +2642,15 @@ window.addEventListener('dragover', (e) => {
 window.addEventListener('drop', (e) => {
   dragDepth = 0;
   overlay.classList.remove('active');
+  // A card dropped anywhere that isn't a drop zone (e.g. the title box) must
+  // not have its id text pasted in.
+  if (dragState) { e.preventDefault(); return; }
   if (!e.dataTransfer.files || e.dataTransfer.files.length === 0) return;
   e.preventDefault();
-  addFiles(e.dataTransfer.files);
+  const files = [...e.dataTransfer.files];
+  const backups = files.filter(f => f.name.toLowerCase().endsWith('.json'));
+  if (backups.length) importBackups(backups);
+  addFiles(files);
 });
 
 // ===== Boot =====
@@ -1131,13 +2661,16 @@ setupDropZone(document.getElementById('pool'), 'pool');
 
 (async () => {
   try {
-    await loadState();
+    await initStore();
   } catch (e) {
     console.error('Load failed:', e);
     freshState();
+    if (!activeId) {
+      activeId = newRankingId();
+      rankings = [{ id: activeId, name: '' }];
+    }
   }
-  syncNameInput();
-  render();
+  showActive();
 })();
 </script>
 </body>
